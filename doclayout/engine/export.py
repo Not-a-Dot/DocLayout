@@ -96,6 +96,41 @@ class TemplateExporter:
         for elem in elements:
             elem_copy = copy.deepcopy(elem)
             
+            # For TEXT_BOX, calculate actual height before pagination check
+            if elem_copy.type == ElementType.TEXT_BOX:
+                # Calculate actual text height to determine if it fits
+                text = elem_copy.props.get("text", "")
+                if text:
+                    font_size = elem_copy.props.get("font_size", 12)
+                    line_height_mm = font_size * 1.2 / 2.83465
+                    width_pt = mm_to_pt(elem_copy.width)
+                    
+                    # Count lines using simpleSplit to match renderer exactly
+                    from reportlab.lib.utils import simpleSplit
+                    from doclayout.adapters.reportlab.font_helper import FontHelper
+                    
+                    font_family = elem_copy.props.get("font_family", "Helvetica")
+                    bold = elem_copy.props.get("font_bold", False)
+                    italic = elem_copy.props.get("font_italic", False)
+                    
+                    try:
+                        font_name = FontHelper.resolve(font_family, bold, italic)
+                    except:
+                        font_name = "Helvetica"
+                    
+                    # Use simpleSplit for consistency with TextDrawer
+                    # simpleSplit does NOT handle newlines, so we must split manually first
+                    paragraphs = text.split('\n')
+                    lines = []
+                    for p in paragraphs:
+                        if not p:
+                            lines.append('')  # Keep empty lines
+                            continue
+                        lines.extend(simpleSplit(p, font_name, font_size, width_pt))
+                    
+                    # Update height to actual text height
+                    elem_copy.height = len(lines) * line_height_mm
+            
             # Calculate available space on current page
             available_height = page_height - current_y
             
@@ -130,7 +165,11 @@ class TemplateExporter:
                             remaining_elem = remaining_part
                         else:
                             remaining_elem = None
-                            current_y = page_height  # Page is full
+                            # Update current_y to end of this part
+                            if first_part is not None:
+                                current_y += first_part.height
+                            else:
+                                current_y = page_height
                             
                 elif elem_copy.type == ElementType.TEXT_BOX:
                     # Split text box by content
@@ -154,7 +193,11 @@ class TemplateExporter:
                             remaining_elem = remaining_part
                         else:
                             remaining_elem = None
-                            current_y = page_height
+                            # Update current_y to end of this part
+                            if first_part is not None:
+                                current_y += first_part.height
+                            else:
+                                current_y = page_height
                 else:
                     # For other elements, move to next page
                     current_page += 1
@@ -216,9 +259,19 @@ class TemplateExporter:
         """
         import copy
         from reportlab.pdfbase.pdfmetrics import stringWidth
+        from doclayout.adapters.reportlab.font_helper import FontHelper
         
         font_size = elem.props.get("font_size", 12)
-        font_name = elem.props.get("font_family", "Helvetica")
+        font_family = elem.props.get("font_family", "Helvetica")
+        bold = elem.props.get("font_bold", False)
+        italic = elem.props.get("font_italic", False)
+        
+        # Resolve font name
+        try:
+            font_name = FontHelper.resolve(font_family, bold, italic)
+        except:
+            font_name = "Helvetica"
+        
         line_height_mm = font_size * 1.2 / 2.83465  # Convert pt to mm
         
         text = elem.props.get("text", "")
@@ -226,51 +279,44 @@ class TemplateExporter:
             # Not enough space for even one line, move to next page
             return None, elem
         
-        # Calculate how many lines fit
+        # Calculate how many lines fit in available space
         lines_that_fit = int(available_height / line_height_mm)
         
         # Convert width to points for stringWidth
         width_pt = mm_to_pt(elem.width)
         
-        # Split text into lines that fit within width
-        words = text.split()
+        # Use simpleSplit for consistent wrapping
+        from reportlab.lib.utils import simpleSplit
+        
+        # simpleSplit does NOT handle newlines, so we must split manually first
+        paragraphs = text.split('\n')
         lines = []
-        current_line = []
-        
-        for word in words:
-            # Test if adding this word exceeds width
-            test_line = " ".join(current_line + [word])
-            text_width = stringWidth(test_line, font_name, font_size)
-            
-            if text_width <= width_pt:
-                current_line.append(word)
-            else:
-                # Current line is full, start new line
-                if current_line:
-                    lines.append(" ".join(current_line))
-                current_line = [word]
-        
-        # Add remaining words as last line
-        if current_line:
-            lines.append(" ".join(current_line))
+        for p in paragraphs:
+            if not p:
+                lines.append('')  # Keep empty lines
+                continue
+            lines.extend(simpleSplit(p, font_name, font_size, width_pt))
         
         # Check if all lines fit
         if len(lines) <= lines_that_fit:
             # All text fits on current page
+            # Update height to actual text height
+            actual_height = len(lines) * line_height_mm
+            elem.height = actual_height
             return elem, None
         
         # Split at lines_that_fit
         first_part_lines = lines[:lines_that_fit]
         remaining_lines = lines[lines_that_fit:]
         
-        # Create first part
+        # Create first part - join with newlines to preserve line structure
         first_elem = copy.deepcopy(elem)
-        first_elem.props["text"] = " ".join(first_part_lines)
+        first_elem.props["text"] = "\n".join(first_part_lines)
         first_elem.height = lines_that_fit * line_height_mm
         
-        # Create remaining part
+        # Create remaining part - join with newlines to preserve line structure
         remaining_elem = copy.deepcopy(elem)
-        remaining_elem.props["text"] = " ".join(remaining_lines)
+        remaining_elem.props["text"] = "\n".join(remaining_lines)
         remaining_elem.height = len(remaining_lines) * line_height_mm
         
         return first_elem, remaining_elem
@@ -320,37 +366,13 @@ class TemplateExporter:
                 cumulative_offset += height_delta
                 
             elif elem.type == ElementType.TEXT_BOX:
-                text = elem.props.get("text", "")
-                if not text:
-                    continue
-                
-                # Calculate base height from editor
+                # Store base height for pagination, but DON'T calculate full height here
+                # Pagination will handle splitting the text box across pages
                 if "base_height" not in elem.props:
                     elem.props["base_height"] = elem.height
                 
-                base_height = elem.props["base_height"]
-                
-                # Calculate text height based on content
-                font_family = elem.props.get("font_family", "Helvetica")
-                font_size = elem.props.get("font_size", 12)
-                bold = elem.props.get("font_bold", False)
-                italic = elem.props.get("font_italic", False)
-                width_mm = elem.width
-                
-                # Calculate actual text height
-                text_height_mm = self._calculate_text_height(
-                    text, font_family, font_size, width_mm, bold, italic
-                )
-                
-                # Only grow if text needs more space than base_height
-                new_height = max(base_height, text_height_mm)
-                height_delta = new_height - elem.height
-                
-                # Update text box height
-                elem.height = new_height
-                
-                # Add delta to cumulative offset for elements below
-                cumulative_offset += height_delta
+                # Keep original height - pagination will split if needed
+                # No cumulative_offset change
         
         return sorted_elements
 

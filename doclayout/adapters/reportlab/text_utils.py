@@ -30,8 +30,9 @@ class TextDrawer:
         
         lines = [text]
         if not auto_scale and wrap and width and width > 0:
-            if stringWidth(text, font_name, fs) > width * 1.15:
-                lines = simpleSplit(text, font_name, fs, width * 1.15)
+            # Always wrap if text exceeds width
+            if stringWidth(text, font_name, fs) > width:
+                lines = simpleSplit(text, font_name, fs, width)
         
         line_h = fs * 1.2
         start_pdf_y = page_h - (y + (fs * 0.8))
