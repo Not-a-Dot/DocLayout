@@ -1,0 +1,19 @@
+{
+    "name": "Dark Fusion",
+    "style": "Fusion",
+    "palette": {
+        "Window": "#353535",
+        "WindowText": "#FFFFFF",
+        "Base": "#191919",
+        "AlternateBase": "#353535",
+        "ToolTipBase": "#FFFFFF",
+        "ToolTipText": "#FFFFFF",
+        "Text": "#FFFFFF",
+        "Button": "#353535",
+        "ButtonText": "#FFFFFF",
+        "BrightText": "#FF0000",
+        "Link": "#2a82da",
+        "Highlight": "#2a82da",
+        "HighlightedText": "#000000"
+    }
+}
