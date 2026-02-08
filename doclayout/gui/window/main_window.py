@@ -10,6 +10,8 @@ from PySide6.QtWidgets import (QMainWindow, QWidget, QGridLayout, QStatusBar,
                                QFileDialog, QMessageBox, QInputDialog, QApplication)
 from PySide6.QtCore import Qt, QSettings
 
+from doclayout.core.i18n import tr
+
 from ..scene import EditorScene
 from ..view import EditorView
 from ..rulers import Ruler
@@ -67,7 +69,7 @@ class MainWindow(QMainWindow):
         
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
-        self.status_bar.showMessage("Ready")
+        self.status_bar.showMessage(tr('status.ready'))
 
     def _on_tool_changed(self, tool_name: str) -> None:
         """Update toolbars when tool changes in scene."""
@@ -87,7 +89,7 @@ class MainWindow(QMainWindow):
             template = self.scene.to_template()
             from doclayout.core.io import save_to_json
             save_to_json(template, file_path)
-            self.status_bar.showMessage(f"Saved to {file_path}")
+            self.status_bar.showMessage(tr('status.file_saved', filename=file_path))
         except Exception as e:
             logger.error("Save error: %s", e)
             QMessageBox.critical(self, "Error", str(e))
@@ -110,7 +112,7 @@ class MainWindow(QMainWindow):
                 if item:
                     self.scene.addItem(item)
             
-            self.status_bar.showMessage(f"Loaded {file_path}")
+            self.status_bar.showMessage(tr('status.file_loaded', filename=file_path))
         except Exception as e:
             logger.error("Open error: %s", e)
             QMessageBox.critical(self, "Error", str(e))
@@ -133,7 +135,7 @@ class MainWindow(QMainWindow):
             output_path = "preview.pdf"
             
             exporter.export(template, renderer, output_path)
-            self.status_bar.showMessage(f"Preview generated: {output_path}")
+            self.status_bar.showMessage(tr('status.preview_generated', filename=output_path))
             
             # Open PDF with default viewer (safe from shell injection)
             if sys.platform == "linux":
@@ -148,7 +150,7 @@ class MainWindow(QMainWindow):
 
     def new_file(self) -> None:
         self._clear_editor()
-        self.status_bar.showMessage("New Document created")
+        self.status_bar.showMessage(tr('status.new_document'))
 
     def export_pdf(self) -> None:
         """Handle export PDF command."""
@@ -165,7 +167,7 @@ class MainWindow(QMainWindow):
             renderer = ReportLabRenderer()
             
             exporter.export(template, renderer, file_path)
-            self.status_bar.showMessage(f"PDF Exported to {file_path}")
+            self.status_bar.showMessage(tr('status.pdf_exported', filename=file_path))
         except Exception as e:
             logger.error("Export error: %s", e)
             QMessageBox.critical(self, "Error", str(e))

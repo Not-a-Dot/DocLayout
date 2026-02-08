@@ -1,0 +1,212 @@
+{
+    "_language_name": "Português (Brasil)",
+    "_language_code": "pt-BR",
+    "menu": {
+        "file": {
+            "title": "Arquivo",
+            "new": "Novo",
+            "open": "Abrir...",
+            "save": "Salvar",
+            "save_as": "Salvar Como...",
+            "export_pdf": "Exportar PDF...",
+            "preview": "Visualizar PDF",
+            "exit": "Sair"
+        },
+        "edit": {
+            "title": "Editar",
+            "undo": "Desfazer",
+            "redo": "Refazer",
+            "cut": "Recortar",
+            "copy": "Copiar",
+            "paste": "Colar",
+            "delete": "Excluir",
+            "select_all": "Selecionar Tudo"
+        },
+        "view": {
+            "title": "Visualizar",
+            "zoom_in": "Aumentar Zoom",
+            "zoom_out": "Diminuir Zoom",
+            "zoom_reset": "Zoom 100%",
+            "show_grid": "Mostrar Grade",
+            "show_rulers": "Mostrar Réguas"
+        },
+        "insert": {
+            "title": "Inserir",
+            "text": "Texto",
+            "rectangle": "Retângulo",
+            "line": "Linha",
+            "image": "Imagem",
+            "table": "Tabela",
+            "kv_box": "Caixa Chave-Valor",
+            "container": "Contêiner"
+        },
+        "arrange": {
+            "title": "Organizar",
+            "align_left": "Alinhar à Esquerda",
+            "align_center": "Alinhar ao Centro",
+            "align_right": "Alinhar à Direita",
+            "align_top": "Alinhar ao Topo",
+            "align_middle": "Alinhar ao Meio",
+            "align_bottom": "Alinhar à Base",
+            "distribute_h": "Distribuir Horizontalmente",
+            "distribute_v": "Distribuir Verticalmente",
+            "bring_front": "Trazer para Frente",
+            "send_back": "Enviar para Trás"
+        },
+        "tools": {
+            "title": "Ferramentas",
+            "variables": "Variáveis",
+            "blocks": "Blocos",
+            "settings": "Configurações"
+        },
+        "help": {
+            "title": "Ajuda",
+            "documentation": "Documentação",
+            "about": "Sobre"
+        }
+    },
+    "toolbar": {
+        "select": "Selecionar",
+        "text": "Texto",
+        "rectangle": "Retângulo",
+        "line": "Linha",
+        "image": "Imagem",
+        "table": "Tabela",
+        "kv_box": "Caixa Chave-Valor",
+        "container": "Contêiner"
+    },
+    "status": {
+        "ready": "Pronto",
+        "loading": "Carregando...",
+        "saving": "Salvando...",
+        "saved": "Salvo",
+        "file_loaded": "Arquivo carregado: {filename}",
+        "file_saved": "Arquivo salvo: {filename}",
+        "pdf_exported": "PDF exportado: {filename}",
+        "preview_generated": "Visualização gerada: {filename}",
+        "new_document": "Novo documento criado",
+        "items_selected": "{count} item(ns) selecionado(s)",
+        "no_selection": "Nenhum item selecionado"
+    },
+    "dialog": {
+        "confirm_exit": {
+            "title": "Confirmar Saída",
+            "message": "Deseja salvar as alterações antes de sair?",
+            "save": "Salvar",
+            "discard": "Descartar",
+            "cancel": "Cancelar"
+        },
+        "error": {
+            "title": "Erro",
+            "file_not_found": "Arquivo não encontrado: {filename}",
+            "invalid_file": "Arquivo inválido ou corrompido",
+            "save_failed": "Falha ao salvar arquivo",
+            "export_failed": "Falha ao exportar PDF",
+            "preview_error": "Erro ao gerar visualização"
+        },
+        "warning": {
+            "title": "Aviso",
+            "unsaved_changes": "Existem alterações não salvas"
+        },
+        "info": {
+            "title": "Informação"
+        },
+        "about": {
+            "title": "Sobre DocLayout",
+            "version": "Versão {version}",
+            "description": "Editor visual de templates para geração de PDFs",
+            "copyright": "© 2024 DocLayout"
+        }
+    },
+    "properties": {
+        "title": "Propriedades",
+        "position": "Posição",
+        "size": "Tamanho",
+        "x": "X",
+        "y": "Y",
+        "width": "Largura",
+        "height": "Altura",
+        "text": "Texto",
+        "font": "Fonte",
+        "font_family": "Família da Fonte",
+        "font_size": "Tamanho da Fonte",
+        "font_bold": "Negrito",
+        "font_italic": "Itálico",
+        "color": "Cor",
+        "fill_color": "Cor de Preenchimento",
+        "stroke_color": "Cor da Borda",
+        "stroke_width": "Largura da Borda",
+        "alignment": "Alinhamento",
+        "align_left": "Esquerda",
+        "align_center": "Centro",
+        "align_right": "Direita",
+        "wrap_text": "Quebrar Texto",
+        "auto_scale": "Escala Automática",
+        "image_path": "Caminho da Imagem",
+        "browse": "Procurar...",
+        "table_data": "Dados da Tabela",
+        "show_header": "Mostrar Cabeçalho",
+        "key_text": "Texto da Chave",
+        "value_text": "Texto do Valor",
+        "split_type": "Tipo de Divisão",
+        "split_ratio": "Proporção",
+        "split_fixed": "Fixo (mm)",
+        "split_auto": "Automático",
+        "show_outline": "Mostrar Contorno",
+        "divider_color": "Cor do Divisor"
+    },
+    "hierarchy": {
+        "title": "Hierarquia",
+        "page": "Página",
+        "no_items": "Nenhum item"
+    },
+    "variables": {
+        "title": "Variáveis",
+        "name": "Nome",
+        "value": "Valor",
+        "add": "Adicionar",
+        "remove": "Remover",
+        "edit": "Editar"
+    },
+    "blocks": {
+        "title": "Blocos",
+        "save_block": "Salvar como Bloco",
+        "load_block": "Carregar Bloco",
+        "block_name": "Nome do Bloco",
+        "no_blocks": "Nenhum bloco salvo"
+    },
+    "page_size": {
+        "title": "Tamanho da Página",
+        "a4": "A4 (210 x 297 mm)",
+        "letter": "Carta (216 x 279 mm)",
+        "thermal_58": "Térmica 58mm",
+        "thermal_80": "Térmica 80mm",
+        "custom": "Personalizado"
+    },
+    "element_types": {
+        "text": "Texto",
+        "rect": "Retângulo",
+        "line": "Linha",
+        "image": "Imagem",
+        "table": "Tabela",
+        "kv_box": "Caixa Chave-Valor",
+        "container": "Contêiner"
+    },
+    "errors": {
+        "generic": "Ocorreu um erro inesperado",
+        "file_io": "Erro ao acessar arquivo",
+        "validation": "Erro de validação",
+        "rendering": "Erro ao renderizar PDF",
+        "network": "Erro de rede",
+        "permission": "Permissão negada"
+    },
+    "settings": {
+        "title": "Configurações",
+        "language": "Idioma",
+        "theme": "Tema",
+        "grid_size": "Tamanho da Grade (mm)",
+        "snap_to_grid": "Ajustar à Grade",
+        "auto_save": "Salvamento Automático",
+        "auto_save_interval": "Intervalo (minutos)"
+    }
+}

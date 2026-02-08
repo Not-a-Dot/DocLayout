@@ -1,0 +1,212 @@
+{
+    "_language_name": "English (United States)",
+    "_language_code": "en-US",
+    "menu": {
+        "file": {
+            "title": "File",
+            "new": "New",
+            "open": "Open...",
+            "save": "Save",
+            "save_as": "Save As...",
+            "export_pdf": "Export PDF...",
+            "preview": "Preview PDF",
+            "exit": "Exit"
+        },
+        "edit": {
+            "title": "Edit",
+            "undo": "Undo",
+            "redo": "Redo",
+            "cut": "Cut",
+            "copy": "Copy",
+            "paste": "Paste",
+            "delete": "Delete",
+            "select_all": "Select All"
+        },
+        "view": {
+            "title": "View",
+            "zoom_in": "Zoom In",
+            "zoom_out": "Zoom Out",
+            "zoom_reset": "Reset Zoom",
+            "show_grid": "Show Grid",
+            "show_rulers": "Show Rulers"
+        },
+        "insert": {
+            "title": "Insert",
+            "text": "Text",
+            "rectangle": "Rectangle",
+            "line": "Line",
+            "image": "Image",
+            "table": "Table",
+            "kv_box": "Key-Value Box",
+            "container": "Container"
+        },
+        "arrange": {
+            "title": "Arrange",
+            "align_left": "Align Left",
+            "align_center": "Align Center",
+            "align_right": "Align Right",
+            "align_top": "Align Top",
+            "align_middle": "Align Middle",
+            "align_bottom": "Align Bottom",
+            "distribute_h": "Distribute Horizontally",
+            "distribute_v": "Distribute Vertically",
+            "bring_front": "Bring to Front",
+            "send_back": "Send to Back"
+        },
+        "tools": {
+            "title": "Tools",
+            "variables": "Variables",
+            "blocks": "Blocks",
+            "settings": "Settings"
+        },
+        "help": {
+            "title": "Help",
+            "documentation": "Documentation",
+            "about": "About"
+        }
+    },
+    "toolbar": {
+        "select": "Select",
+        "text": "Text",
+        "rectangle": "Rectangle",
+        "line": "Line",
+        "image": "Image",
+        "table": "Table",
+        "kv_box": "Key-Value Box",
+        "container": "Container"
+    },
+    "status": {
+        "ready": "Ready",
+        "loading": "Loading...",
+        "saving": "Saving...",
+        "saved": "Saved",
+        "file_loaded": "File loaded: {filename}",
+        "file_saved": "File saved: {filename}",
+        "pdf_exported": "PDF exported: {filename}",
+        "preview_generated": "Preview generated: {filename}",
+        "new_document": "New document created",
+        "items_selected": "{count} item(s) selected",
+        "no_selection": "No items selected"
+    },
+    "dialog": {
+        "confirm_exit": {
+            "title": "Confirm Exit",
+            "message": "Do you want to save changes before exiting?",
+            "save": "Save",
+            "discard": "Discard",
+            "cancel": "Cancel"
+        },
+        "error": {
+            "title": "Error",
+            "file_not_found": "File not found: {filename}",
+            "invalid_file": "Invalid or corrupted file",
+            "save_failed": "Failed to save file",
+            "export_failed": "Failed to export PDF",
+            "preview_error": "Error generating preview"
+        },
+        "warning": {
+            "title": "Warning",
+            "unsaved_changes": "There are unsaved changes"
+        },
+        "info": {
+            "title": "Information"
+        },
+        "about": {
+            "title": "About DocLayout",
+            "version": "Version {version}",
+            "description": "Visual template editor for PDF generation",
+            "copyright": "© 2024 DocLayout"
+        }
+    },
+    "properties": {
+        "title": "Properties",
+        "position": "Position",
+        "size": "Size",
+        "x": "X",
+        "y": "Y",
+        "width": "Width",
+        "height": "Height",
+        "text": "Text",
+        "font": "Font",
+        "font_family": "Font Family",
+        "font_size": "Font Size",
+        "font_bold": "Bold",
+        "font_italic": "Italic",
+        "color": "Color",
+        "fill_color": "Fill Color",
+        "stroke_color": "Stroke Color",
+        "stroke_width": "Stroke Width",
+        "alignment": "Alignment",
+        "align_left": "Left",
+        "align_center": "Center",
+        "align_right": "Right",
+        "wrap_text": "Wrap Text",
+        "auto_scale": "Auto Scale",
+        "image_path": "Image Path",
+        "browse": "Browse...",
+        "table_data": "Table Data",
+        "show_header": "Show Header",
+        "key_text": "Key Text",
+        "value_text": "Value Text",
+        "split_type": "Split Type",
+        "split_ratio": "Ratio",
+        "split_fixed": "Fixed (mm)",
+        "split_auto": "Automatic",
+        "show_outline": "Show Outline",
+        "divider_color": "Divider Color"
+    },
+    "hierarchy": {
+        "title": "Hierarchy",
+        "page": "Page",
+        "no_items": "No items"
+    },
+    "variables": {
+        "title": "Variables",
+        "name": "Name",
+        "value": "Value",
+        "add": "Add",
+        "remove": "Remove",
+        "edit": "Edit"
+    },
+    "blocks": {
+        "title": "Blocks",
+        "save_block": "Save as Block",
+        "load_block": "Load Block",
+        "block_name": "Block Name",
+        "no_blocks": "No saved blocks"
+    },
+    "page_size": {
+        "title": "Page Size",
+        "a4": "A4 (210 x 297 mm)",
+        "letter": "Letter (216 x 279 mm)",
+        "thermal_58": "Thermal 58mm",
+        "thermal_80": "Thermal 80mm",
+        "custom": "Custom"
+    },
+    "element_types": {
+        "text": "Text",
+        "rect": "Rectangle",
+        "line": "Line",
+        "image": "Image",
+        "table": "Table",
+        "kv_box": "Key-Value Box",
+        "container": "Container"
+    },
+    "errors": {
+        "generic": "An unexpected error occurred",
+        "file_io": "File access error",
+        "validation": "Validation error",
+        "rendering": "PDF rendering error",
+        "network": "Network error",
+        "permission": "Permission denied"
+    },
+    "settings": {
+        "title": "Settings",
+        "language": "Language",
+        "theme": "Theme",
+        "grid_size": "Grid Size (mm)",
+        "snap_to_grid": "Snap to Grid",
+        "auto_save": "Auto Save",
+        "auto_save_interval": "Interval (minutes)"
+    }
+}

@@ -886,3 +886,4 @@ Application launcher for the GUI editor.
 - Block library management UI
 - Export to formats beyond PDF (HTML, SVG)
 - Collaborative editing features
+## Internationalization\n\nDocLayout supports multiple languages via JSON translation files. See [I18N.md](I18N.md) for complete documentation.\n\n**Quick Start:**\n```python\nfrom doclayout.core.i18n import tr\ntitle = tr('menu.file.new')  # Auto-translated\n```\n\n**Supported Languages:** pt-BR (default), en-US
