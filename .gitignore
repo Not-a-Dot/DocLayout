@@ -27,3 +27,4 @@ prompt.txt
 .agent/
 .gitignore
 scripts/
+DocLayout.code-workspace
