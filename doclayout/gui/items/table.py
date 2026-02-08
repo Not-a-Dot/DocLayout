@@ -97,9 +97,16 @@ class TableEditorItem(BaseEditorItem, QGraphicsRectItem):
         self.update_handles()
 
     def create_properties_widget(self, parent):
-        from PySide6.QtWidgets import QWidget, QFormLayout, QLineEdit, QPlainTextEdit, QPushButton, QCheckBox, QSpinBox, QLabel
+        from PySide6.QtWidgets import QWidget, QFormLayout, QLineEdit, QPlainTextEdit, QPushButton, QCheckBox, QSpinBox, QLabel, QComboBox
         widget = QWidget(parent)
         layout = QFormLayout(widget)
+        
+        # Theme Selector
+        theme_combo = QComboBox()
+        theme_combo.addItems(["Simple", "Grid", "Striped", "Dark"])
+        theme_combo.setCurrentText(self.model.props.get("theme", "Grid"))
+        theme_combo.currentTextChanged.connect(lambda v: [self.model.props.update({"theme": v}), self.update()])
+        layout.addRow("Theme:", theme_combo)
         
         # Show Header
         chk_header = QCheckBox("Show Header Row")
@@ -113,6 +120,12 @@ class TableEditorItem(BaseEditorItem, QGraphicsRectItem):
         spin_f.setValue(self.model.props.get("font_size", 10))
         spin_f.valueChanged.connect(lambda v: [self.model.props.update({"font_size": v}), self.update()])
         layout.addRow("Font Size:", spin_f)
+        
+        # Colors (Overrides)
+        header_bg = QLineEdit(self.model.props.get("header_bg_color", ""))
+        header_bg.setPlaceholderText("Header BG Color")
+        header_bg.textChanged.connect(lambda v: [self.model.props.update({"header_bg_color": v}), self.update()])
+        layout.addRow("Header BG:", header_bg)
         
         # Data Editor (Simple CSV-like)
         layout.addRow(QLabel("<b>Table Data (Comma Separated):</b>"), QLabel(""))
@@ -133,6 +146,6 @@ class TableEditorItem(BaseEditorItem, QGraphicsRectItem):
         layout.addRow(data_edit)
         
         return widget
-
+ 
     def get_bindable_properties(self):
-        return ["data", "font_size", "stroke_color"]
+        return ["data", "font_size", "theme", "header_bg_color", "stroke_color"]

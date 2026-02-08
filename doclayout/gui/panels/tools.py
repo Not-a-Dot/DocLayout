@@ -51,11 +51,12 @@ class ToolsPanel(QWidget):
             (self.action_manager.tool_select_action, 0, 0),
             (self.action_manager.tool_rect_action, 0, 1),
             (self.action_manager.tool_text_action, 1, 0),
-            (self.action_manager.tool_line_action, 1, 1),
+            (self.action_manager.tool_textbox_action, 1, 1),
             (self.action_manager.tool_image_action, 2, 0),
-            (self.action_manager.tool_kvbox_action, 2, 1),
-            (self.action_manager.tool_container_action, 3, 0),
+            (self.action_manager.tool_line_action, 2, 1),
+            (self.action_manager.tool_kvbox_action, 3, 0),
             (self.action_manager.tool_table_action, 3, 1),
+            (self.action_manager.tool_container_action, 4, 0),
         ]
         
         for action, row, col in tools:

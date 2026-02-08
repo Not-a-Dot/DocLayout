@@ -6,8 +6,8 @@ from PySide6.QtWidgets import QGraphicsTextItem, QGraphicsItem
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QTextOption, QPainterPath
 
-from ..base import BaseEditorItem
-from ..text.properties import TextPropertiesWidget
+from .base import BaseEditorItem
+from .text.properties import TextPropertiesWidget
 
 class TextBoxEditorItem(BaseEditorItem, QGraphicsTextItem):
     """
@@ -86,6 +86,10 @@ class TextBoxEditorItem(BaseEditorItem, QGraphicsTextItem):
         return super().itemChange(change, value)
 
     def create_properties_widget(self, parent) -> TextPropertiesWidget:
+        # We only need the text content editor here, as other props 
+        # (font, color, alignment) are handled by the main panel or could be refactored
+        # For now, let's keep using TextPropertiesWidget but we might want to simplify it later
+        # or properly integrate generic font properties into the main panel
         return TextPropertiesWidget(self, parent)
 
     def get_bindable_properties(self) -> list:

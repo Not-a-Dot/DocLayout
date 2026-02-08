@@ -71,6 +71,9 @@ class ActionManager:
         self.tool_text_action = QAction(tr('toolbar.text'), p)
         self.tool_text_action.setCheckable(True)
         
+        self.tool_textbox_action = QAction("Text Box", p) # Using direct string to ensure visibility if translation missing
+        self.tool_textbox_action.setCheckable(True)
+        
         self.tool_line_action = QAction(tr('toolbar.line'), p)
         self.tool_line_action.setCheckable(True)
         
@@ -91,7 +94,7 @@ class ActionManager:
         self.group_action.triggered.connect(lambda: p.scene.group_selected())
         
         self.tool_group = QActionGroup(p)
-        for act in [self.tool_select_action, self.tool_rect_action, self.tool_text_action,
+        for act in [self.tool_select_action, self.tool_rect_action, self.tool_text_action, self.tool_textbox_action,
                     self.tool_image_action, self.tool_line_action, self.tool_kvbox_action,
                     self.tool_container_action, self.tool_table_action]:
             self.tool_group.addAction(act)
@@ -99,6 +102,7 @@ class ActionManager:
         self.tool_select_action.triggered.connect(lambda: p.scene.set_tool("select"))
         self.tool_rect_action.triggered.connect(lambda: p.scene.set_tool("rect"))
         self.tool_text_action.triggered.connect(lambda: p.scene.set_tool("text"))
+        self.tool_textbox_action.triggered.connect(lambda: p.scene.set_tool("textbox"))
         self.tool_image_action.triggered.connect(lambda: p.scene.set_tool("image"))
         self.tool_line_action.triggered.connect(lambda: p.scene.set_tool("line"))
         self.tool_kvbox_action.triggered.connect(lambda: p.scene.set_tool("kvbox"))

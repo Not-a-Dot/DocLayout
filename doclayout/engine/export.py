@@ -459,16 +459,31 @@ class TemplateExporter:
                                color=color, alignment=align, width=w,
                                bold=bold, italic=italic, wrap=True)
         elif elem.type == ElementType.TEXT_BOX:
-            # TEXT_BOX renders exactly like TEXT but with dynamic height
+            # Render background/border first
+            bg_color = elem.props.get("background_color", None)
+            show_border = elem.props.get("show_border", False)
+            border_color = elem.props.get("border_color", "black") if show_border else None
+            border_width = float(elem.props.get("border_width", 1.0))
+            
+            if bg_color or show_border:
+                renderer.draw_rect(x, y, w, h, stroke_color=border_color, fill_color=bg_color, stroke_width=border_width)
+
+            # Render text
             font_name = elem.props.get("font_family", "Helvetica")
             font_size = elem.props.get("font_size", 12)
             color = elem.props.get("color", "black")
             align = elem.props.get("text_align", "left")
             bold = elem.props.get("font_bold", False)
             italic = elem.props.get("font_italic", False)
-            renderer.draw_text(x, y, elem.props.get("text", ""), 
+            
+            # Apply padding (visual only for now, reducing text width/pos)
+            padding = 2.0 if (show_border or bg_color) else 0.0
+            text_x = x + padding
+            text_w = w - (padding * 2) if w else None
+            
+            renderer.draw_text(text_x, y + padding, elem.props.get("text", ""), 
                                font_name=font_name, font_size=font_size, 
-                               color=color, alignment=align, width=w,
+                               color=color, alignment=align, width=text_w,
                                bold=bold, italic=italic, wrap=True)
         elif elem.type == ElementType.IMAGE:
             renderer.draw_image(x, y, w, h, elem.props.get("image_path", ""))
@@ -547,14 +562,13 @@ class TemplateExporter:
 
         elif elem.type == ElementType.TABLE:
             data = elem.props.get("data", [])
-            if data:
-                font_size = elem.props.get("font_size", 10)
-                show_header = elem.props.get("show_header", True)
-                
-                # If show_header is True, we highlight the first row
-                fill_h = "#f0f0f0" if show_header else None
-                
-                renderer.draw_table(x, y, w, h, data, 
-                                   font_size=font_size,
-                                   fill_color_header=fill_h)
-            pass
+            # Also pass new style props
+            theme = elem.props.get("theme", "Grid")
+            header_bg = elem.props.get("header_bg_color", None)
+            stroke_col = elem.props.get("stroke_color", "black")
+            
+            renderer.draw_table(x, y, w, h, data, 
+                                font_size=elem.props.get("font_size", 10),
+                                theme=theme,
+                                fill_color_header=header_bg,
+                                stroke_color=stroke_col)

@@ -39,8 +39,12 @@ class ToolManager:
                 etype = ElementType.RECT
             elif tool_name == "text":
                 etype = ElementType.TEXT
-                props = {"text": "New Text"}
+                props = {"text": "Label"}
                 width, height = 50, 10
+            elif tool_name == "textbox":
+                etype = ElementType.TEXT_BOX
+                props = {"text": "Text Box", "show_border": True}
+                width, height = 80, 40
             elif tool_name == "line":
                 etype = ElementType.LINE
                 width, height = 20, 0

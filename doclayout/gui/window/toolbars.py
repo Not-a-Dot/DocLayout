@@ -35,15 +35,10 @@ class ToolbarManager:
         toolbar.addAction(acts.preview_action)
         toolbar.addSeparator()
         
-        toolbar.addAction(acts.tool_select_action)
-        toolbar.addAction(acts.tool_rect_action)
-        toolbar.addAction(acts.tool_text_action)
-        toolbar.addAction(acts.tool_image_action)
-        toolbar.addAction(acts.tool_line_action)
-        toolbar.addAction(acts.tool_kvbox_action)
-        toolbar.addAction(acts.tool_container_action)
-        toolbar.addAction(acts.tool_table_action)
-        toolbar.addSeparator()
+        # Tools are now in the side panel only, as requested
+        # toolbar.addAction(acts.tool_select_action)
+        # ... (removed duplicates)
+        
         toolbar.addAction(acts.group_action)
 
     @staticmethod

@@ -138,7 +138,45 @@ class PropertyEditor(QWidget):
         
         self.main_layout.addWidget(self.scroll)
         
-        # 1. Geometry Section
+        # 1. Item Properties Section (Top Priority)
+        self.props_section = CollapsibleSection("Item Properties")
+        self.custom_props_area = QWidget()
+        self.custom_props_layout = QVBoxLayout(self.custom_props_area)
+        self.custom_props_layout.setContentsMargins(0, 0, 0, 0)
+        self.props_section.addWidget(self.custom_props_area)
+        self.container_layout.addWidget(self.props_section)
+
+        # 2. Appearance Section (New)
+        self.appearance_section = CollapsibleSection("Appearance")
+        loss_layout = QFormLayout()
+        
+        # Border
+        self.chk_border = QCheckBox("Show Border")
+        self.chk_border.toggled.connect(lambda v: self._update_model_prop("show_border", v))
+        loss_layout.addRow("", self.chk_border)
+        
+        self.border_width = QDoubleSpinBox()
+        self.border_width.setRange(0.1, 50.0)
+        self.border_width.setSuffix(" pt")
+        self.border_width.setValue(1.0)
+        self.border_width.valueChanged.connect(lambda v: self._update_model_prop("border_width", v))
+        loss_layout.addRow("Border Width:", self.border_width)
+        
+        # Colors (simplified as text inputs for now, could be color pickers)
+        self.border_color = QLineEdit()
+        self.border_color.setPlaceholderText("#000000")
+        self.border_color.textChanged.connect(lambda v: self._update_model_prop("border_color", v))
+        loss_layout.addRow("Border Color:", self.border_color)
+        
+        self.bg_color = QLineEdit()
+        self.bg_color.setPlaceholderText("transparent or #FFFFFF")
+        self.bg_color.textChanged.connect(lambda v: self._update_model_prop("background_color", v))
+        loss_layout.addRow("Background:", self.bg_color)
+        
+        self.appearance_section.setContentLayout(loss_layout)
+        self.container_layout.addWidget(self.appearance_section)
+
+        # 3. Geometry Section
         self.geo_section = CollapsibleSection("Geometry")
         geo_form = QFormLayout()
         
@@ -173,7 +211,23 @@ class PropertyEditor(QWidget):
         self.geo_section.setContentLayout(geo_form)
         self.container_layout.addWidget(self.geo_section)
 
-        # 2. Locking & Grouping Section
+        # 4. Data Bindings Section
+        self.binding_section = CollapsibleSection("Data Bindings")
+        binding_container_layout = QVBoxLayout()
+        
+        self.bindings_container = QWidget()
+        self.bindings_layout = QVBoxLayout(self.bindings_container)
+        self.bindings_layout.setContentsMargins(0, 0, 0, 0)
+        binding_container_layout.addWidget(self.bindings_container)
+        
+        self.btn_add_binding = QPushButton("+ Add Binding")
+        self.btn_add_binding.clicked.connect(lambda: self._add_binding_row())
+        binding_container_layout.addWidget(self.btn_add_binding)
+        
+        self.binding_section.setContentLayout(binding_container_layout)
+        self.container_layout.addWidget(self.binding_section)
+
+        # 5. Locking & Grouping Section
         self.lock_section = CollapsibleSection("Locking & Grouping")
         lock_layout = QVBoxLayout()
         
@@ -199,32 +253,8 @@ class PropertyEditor(QWidget):
         
         self.lock_section.setContentLayout(lock_layout)
         self.container_layout.addWidget(self.lock_section)
-
-        # 3. Data Bindings Section
-        self.binding_section = CollapsibleSection("Data Bindings")
-        binding_container_layout = QVBoxLayout()
         
-        self.bindings_container = QWidget()
-        self.bindings_layout = QVBoxLayout(self.bindings_container)
-        self.bindings_layout.setContentsMargins(0, 0, 0, 0)
-        binding_container_layout.addWidget(self.bindings_container)
-        
-        self.btn_add_binding = QPushButton("+ Add Binding")
-        self.btn_add_binding.clicked.connect(lambda: self._add_binding_row())
-        binding_container_layout.addWidget(self.btn_add_binding)
-        
-        self.binding_section.setContentLayout(binding_container_layout)
-        self.container_layout.addWidget(self.binding_section)
-
-        # 4. Item Properties Section
-        self.props_section = CollapsibleSection("Item Properties")
-        self.custom_props_area = QWidget()
-        self.custom_props_layout = QVBoxLayout(self.custom_props_area)
-        self.custom_props_layout.setContentsMargins(0, 0, 0, 0)
-        self.props_section.addWidget(self.custom_props_area)
-        self.container_layout.addWidget(self.props_section)
-        
-        # 5. Project Properties Section (shown when nothing selected)
+        # 6. Project Properties Section (shown when nothing selected)
         self.project_section = CollapsibleSection("Propriedades do Projeto")
         from ..project_properties import ProjectPropertiesWidget
         self.project_props_widget = ProjectPropertiesWidget(self.scene.template)
@@ -346,6 +376,7 @@ class PropertyEditor(QWidget):
             self.lock_section.setVisible(False)
             self.binding_section.setVisible(False)
             self.props_section.setVisible(False)
+            self.appearance_section.setVisible(False)
             self.project_section.setVisible(True)
             self.setEnabled(True)
             return
@@ -364,15 +395,25 @@ class PropertyEditor(QWidget):
             self.project_section.setVisible(False)
             self.geo_section.setVisible(True)
             self.lock_section.setVisible(True)
+            self.appearance_section.setVisible(True)
             
             self._clear_custom_widget()
             
             model = self._item.model
+            
+            # Geometry
             self.x_edit.setValue(model.x)
             self.y_edit.setValue(model.y)
             self.w_edit.setValue(model.width)
             self.h_edit.setValue(model.height)
             
+            # Appearance
+            self.chk_border.setChecked(model.props.get("show_border", False))
+            self.border_width.setValue(float(model.props.get("border_width", 1.0)))
+            self.border_color.setText(str(model.props.get("border_color", "black")))
+            self.bg_color.setText(str(model.props.get("background_color", "")))
+            
+            # Locking
             self.chk_lock_pos.setChecked(all(it.model.lock_position for it in items))
             self.chk_lock_geo.setChecked(all(it.model.lock_geometry for it in items))
             self.chk_lock_sel.setChecked(all(it.model.lock_selection for it in items))

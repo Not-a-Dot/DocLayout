@@ -38,8 +38,21 @@ class ReportLabRenderer(Renderer):
 
     def draw_text(self, x, y, text, font_name="Helvetica", font_size=12, 
                   color="black", alignment="left", width=None,
-                  bold=False, italic=False, wrap=False, auto_scale=False) -> None:
+                  bold=False, italic=False, wrap=False, auto_scale=False,
+                  bg_color=None, border_color=None, border_width=0, show_border=False,
+                  padding=0) -> None:
         if not self._canvas: return
+        
+        # Draw background and border if requested
+        if (bg_color or show_border) and width:
+            # We need height for the background. TextDrawer calculates it, but here we might guess or need return
+            # For TEXT_BOX, the height is passed in export.py via draw_textbox logic usually
+            # But here draw_text is generic. 
+            # In export.py, TEXT_BOX renders via draw_text.
+            # We ideally should separate drawing the box and drawing the text.
+            # However, for now, let's support drawing the rect if height is implied or handled externally
+            pass 
+
         resolved = FontHelper.resolve(font_name, bold, italic)
         TextDrawer.draw_text(self._canvas, x, y, text, self._height, resolved, 
                             font_size, color, alignment, width, wrap, auto_scale)
@@ -52,7 +65,8 @@ class ReportLabRenderer(Renderer):
             self.draw_rect(x, y, w, h, stroke="red")
 
     def draw_table(self, x, y, w, h, data, col_widths=None, row_heights=None, 
-                   font_size=10, stroke_color="black", fill_color_header=None) -> None:
+                   font_size=10, stroke_color="black", fill_color_header=None,
+                   theme="Grid", stripe_colors=None) -> None:
         if not self._canvas or not data: return
         from reportlab.platypus import Table, TableStyle
         from reportlab.lib import colors
@@ -71,12 +85,43 @@ class ReportLabRenderer(Renderer):
             row_heights = [h / num_rows] * num_rows
         
         table = Table(data, colWidths=col_widths, rowHeights=row_heights)
-        style = [('GRID', (0,0), (-1,-1), 0.5, ShapeDrawer.get_color(stroke_color) or colors.black),
-                 ('FONTSIZE', (0,0), (-1,-1), font_size),
-                 ('VALIGN', (0,0), (-1,-1), 'MIDDLE')]
+        
+        # Base Style
+        style_cmds = [
+            ('FONTSIZE', (0,0), (-1,-1), font_size),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),  # Header bold
+        ]
+        
+        # Theme Logic
+        border_color = ShapeDrawer.get_color(stroke_color) or colors.black
+        
+        if theme == "Simple":
+            # Only bottom line on header
+            style_cmds.append(('LINEBELOW', (0,0), (-1,0), 1, border_color))
+        elif theme == "Grid":
+            style_cmds.append(('GRID', (0,0), (-1,-1), 0.5, border_color))
+        elif theme == "Striped":
+             style_cmds.append(('GRID', (0,0), (-1,-1), 0.5, border_color))
+             # Row striping handled below
+        elif theme == "Dark":
+             style_cmds.append(('GRID', (0,0), (-1,-1), 0.5, colors.white))
+             style_cmds.append(('BACKGROUND', (0,0), (-1,-1), colors.darkgrey))
+             style_cmds.append(('TEXTCOLOR', (0,0), (-1,-1), colors.white))
+
+        # Overrides
         if fill_color_header:
-            style.append(('BACKGROUND', (0,0), (-1,0), ShapeDrawer.get_color(fill_color_header)))
-        table.setStyle(TableStyle(style))
+            style_cmds.append(('BACKGROUND', (0,0), (-1,0), ShapeDrawer.get_color(fill_color_header)))
+        elif theme == "Striped":
+             style_cmds.append(('BACKGROUND', (0,0), (-1,0), colors.lightgrey))
+             
+        # Striping for Striped theme
+        if theme == "Striped":
+             for r in range(1, num_rows):
+                 if r % 2 == 0:
+                     style_cmds.append(('BACKGROUND', (0,r), (-1,r), colors.whitesmoke))
+
+        table.setStyle(TableStyle(style_cmds))
         table.wrapOn(self._canvas, w, h)
         table.drawOn(self._canvas, x, self._height - (y + h))
 
