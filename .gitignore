@@ -26,3 +26,4 @@ tests/
 prompt.txt
 .agent/
 .gitignore
+scripts/
