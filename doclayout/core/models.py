@@ -16,6 +16,7 @@ class ElementType(str, Enum):
     """Enumeration of supported element types."""
     RECT = "rect"
     TEXT = "text"
+    TEXT_BOX = "text_box"
     LINE = "line"
     IMAGE = "image"
     KV_BOX = "kv_box"

@@ -29,6 +29,9 @@ class TemplateExporter:
         """
         elements = self.engine.compile(template)
         
+        # Calculate dynamic heights for tables and text boxes, adjust element positions
+        elements = self._adjust_dynamic_heights(elements)
+        
         # Calculate dynamic height for thermal paper
         page_w = template.page_size.width
         actual_height = template.page_size.height
@@ -51,6 +54,144 @@ class TemplateExporter:
         renderer.save(output_path)
         return output_path
 
+    def _adjust_dynamic_heights(self, elements: List[BaseElement]) -> List[BaseElement]:
+        """
+        Calculate dynamic heights for tables and text boxes, and adjust positions of elements below them.
+        """
+        # Sort elements by Y position to process top-to-bottom
+        sorted_elements = sorted(elements, key=lambda e: e.y)
+        
+        cumulative_offset = 0.0
+        
+        for elem in sorted_elements:
+            # Apply cumulative offset from elements above
+            elem.y += cumulative_offset
+            
+            if elem.type == ElementType.TABLE:
+                data = elem.props.get("data", [])
+                if not data:
+                    continue
+                
+                # Calculate base row height from editor dimensions
+                # Store original height as base_height if not already stored
+                if "base_height" not in elem.props:
+                    elem.props["base_height"] = elem.height
+                
+                base_height = elem.props["base_height"]
+                num_rows_data = len(data)
+                
+                # Calculate row height from editor (assuming editor had at least 1 row)
+                # Default to 3 rows if not specified
+                num_rows_editor = elem.props.get("num_rows_editor", 3)
+                row_height = base_height / num_rows_editor
+                
+                # Store row height for renderer
+                elem.props["row_height"] = row_height
+                
+                # Calculate new height based on actual data
+                new_height = row_height * num_rows_data
+                height_delta = new_height - elem.height
+                
+                # Update table height
+                elem.height = new_height
+                
+                # Add delta to cumulative offset for elements below
+                cumulative_offset += height_delta
+                
+            elif elem.type == ElementType.TEXT_BOX:
+                text = elem.props.get("text", "")
+                if not text:
+                    continue
+                
+                # Calculate base height from editor
+                if "base_height" not in elem.props:
+                    elem.props["base_height"] = elem.height
+                
+                base_height = elem.props["base_height"]
+                
+                # Calculate text height based on content
+                font_family = elem.props.get("font_family", "Helvetica")
+                font_size = elem.props.get("font_size", 12)
+                bold = elem.props.get("font_bold", False)
+                italic = elem.props.get("font_italic", False)
+                width_mm = elem.width
+                
+                # Calculate actual text height
+                text_height_mm = self._calculate_text_height(
+                    text, font_family, font_size, width_mm, bold, italic
+                )
+                
+                # Only grow if text needs more space than base_height
+                new_height = max(base_height, text_height_mm)
+                height_delta = new_height - elem.height
+                
+                # Update text box height
+                elem.height = new_height
+                
+                # Add delta to cumulative offset for elements below
+                cumulative_offset += height_delta
+        
+        return sorted_elements
+
+    def _calculate_text_height(self, text: str, font_family: str, font_size: float, 
+                               width_mm: float, bold: bool = False, italic: bool = False) -> float:
+        """
+        Calculate the height needed to render text with wrapping.
+        
+        Args:
+            text: The text content
+            font_family: Font family name
+            font_size: Font size in points
+            width_mm: Available width in mm
+            bold: Whether text is bold
+            italic: Whether text is italic
+            
+        Returns:
+            Height in mm needed to render the text
+        """
+        from reportlab.pdfbase.pdfmetrics import stringWidth
+        from doclayout.adapters.reportlab.font_helper import FontHelper
+        
+        # Convert width to points for ReportLab
+        width_pt = mm_to_pt(width_mm)
+        
+        # Resolve font name
+        resolved_font = FontHelper.resolve(font_family, bold, italic)
+        
+        # Split text into words for wrapping calculation
+        words = text.split()
+        if not words:
+            return font_size * 1.2 / 2.83465  # One line height in mm
+        
+        lines = []
+        current_line = ""
+        
+        for word in words:
+            test_line = current_line + " " + word if current_line else word
+            try:
+                line_width = stringWidth(test_line, resolved_font, font_size)
+            except (KeyError, ValueError, AttributeError):
+                # Fallback to Helvetica if font not found
+                line_width = stringWidth(test_line, "Helvetica", font_size)
+            
+            if line_width <= width_pt:
+                current_line = test_line
+            else:
+                if current_line:
+                    lines.append(current_line)
+                current_line = word
+        
+        if current_line:
+            lines.append(current_line)
+        
+        # Calculate total height
+        line_height_pt = font_size * 1.2  # Standard line spacing
+        total_height_pt = len(lines) * line_height_pt
+        
+        # Convert back to mm
+        return total_height_pt / 2.83465
+
+
 
 
     def _render_element(self, elem: BaseElement, renderer: Renderer):
@@ -64,6 +205,18 @@ class TemplateExporter:
             stroke_w = elem.props.get("stroke_width", 1.0)
             renderer.draw_rect(x, y, w, h, stroke_color=stroke, stroke_width=stroke_w)
         elif elem.type == ElementType.TEXT:
+            font_name = elem.props.get("font_family", "Helvetica")
+            font_size = elem.props.get("font_size", 12)
+            color = elem.props.get("color", "black")
+            align = elem.props.get("text_align", "left")
+            bold = elem.props.get("font_bold", False)
+            italic = elem.props.get("font_italic", False)
+            renderer.draw_text(x, y, elem.props.get("text", ""), 
+                               font_name=font_name, font_size=font_size, 
+                               color=color, alignment=align, width=w,
+                               bold=bold, italic=italic, wrap=True)
+        elif elem.type == ElementType.TEXT_BOX:
+            # TEXT_BOX renders exactly like TEXT but with dynamic height
             font_name = elem.props.get("font_family", "Helvetica")
             font_size = elem.props.get("font_size", 12)
             color = elem.props.get("color", "black")

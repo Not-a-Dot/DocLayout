@@ -5,6 +5,7 @@ GUI items package.
 from .base import BaseEditorItem
 from .rect import RectEditorItem
 from .text import TextEditorItem
+from .textbox import TextBoxEditorItem
 from .image import ImageEditorItem
 from .line import LineEditorItem, LineHandle
 from .kvbox import KVBoxEditorItem
@@ -37,6 +38,8 @@ def get_item_for_model(model):
         return RectEditorItem(model)
     elif model.type == ElementType.TEXT:
         return TextEditorItem(model)
+    elif model.type == ElementType.TEXT_BOX:
+        return TextBoxEditorItem(model)
     elif model.type == ElementType.IMAGE:
         return ImageEditorItem(model)
     elif model.type == ElementType.LINE:

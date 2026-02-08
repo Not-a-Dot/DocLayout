@@ -57,14 +57,28 @@ class ReportLabRenderer(Renderer):
         from reportlab.platypus import Table, TableStyle
         from reportlab.lib import colors
         
+        # Calculate column widths and row heights based on specified dimensions
+        num_rows = len(data)
+        num_cols = len(data[0]) if num_rows > 0 else 0
+        
+        if num_cols == 0 or num_rows == 0:
+            return
+        
+        # If not specified, distribute width and height evenly
+        if col_widths is None:
+            col_widths = [w / num_cols] * num_cols
+        if row_heights is None:
+            row_heights = [h / num_rows] * num_rows
+        
         table = Table(data, colWidths=col_widths, rowHeights=row_heights)
         style = [('GRID', (0,0), (-1,-1), 0.5, ShapeDrawer.get_color(stroke_color) or colors.black),
-                 ('FONTSIZE', (0,0), (-1,-1), font_size)]
+                 ('FONTSIZE', (0,0), (-1,-1), font_size),
+                 ('VALIGN', (0,0), (-1,-1), 'MIDDLE')]
         if fill_color_header:
             style.append(('BACKGROUND', (0,0), (-1,0), ShapeDrawer.get_color(fill_color_header)))
         table.setStyle(TableStyle(style))
-        _, actual_h = table.wrap(w, h)
-        table.drawOn(self._canvas, x, self._height - (y + actual_h))
+        table.wrapOn(self._canvas, w, h)
+        table.drawOn(self._canvas, x, self._height - (y + h))
 
     def initialize(self, file_path: str) -> None:
         self._canvas = canvas.Canvas(file_path, pagesize=(self._width, self._height))

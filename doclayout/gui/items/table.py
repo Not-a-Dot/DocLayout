@@ -27,6 +27,11 @@ class TableEditorItem(BaseEditorItem, QGraphicsRectItem):
             
         if "font_size" not in self.model.props:
             self.model.props["font_size"] = 10
+        
+        # Store number of rows from editor for dynamic height calculation
+        if "num_rows_editor" not in self.model.props:
+            data = self.model.props.get("data", [])
+            self.model.props["num_rows_editor"] = len(data) if data else 3
             
         from ..handles import ResizeHandle
         self._handle = ResizeHandle(ResizeHandle.BOTTOM_RIGHT, self)
