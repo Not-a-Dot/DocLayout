@@ -35,7 +35,7 @@ class LineHandle(QGraphicsRectItem):
     
     def paint(self, painter, option, widget):
         """Draw as a professional square with antialiasing."""
-        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         painter.setBrush(self.brush())
         painter.setPen(self.pen())
         painter.drawRect(self.rect())

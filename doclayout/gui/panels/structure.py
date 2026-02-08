@@ -76,14 +76,14 @@ class StructurePanel(QWidget):
 
     def _sync_graphics_hierarchy(self, tree_item: QTreeWidgetItem) -> None:
         """Sync graphics item parents to match tree structure."""
-        graphics_item = tree_item.data(0, Qt.UserRole)
+        graphics_item = getattr(tree_item, '_graphics_item', None)
         
         if graphics_item:
             graphics_item.model.children = []
         
         for i in range(tree_item.childCount()):
             child_tree_item = tree_item.child(i)
-            child_graphics_item = child_tree_item.data(0, Qt.UserRole)
+            child_graphics_item = getattr(child_tree_item, '_graphics_item', None)
             
             if child_graphics_item:
                 if graphics_item:
@@ -128,7 +128,7 @@ class StructurePanel(QWidget):
             
         tree_item = QTreeWidgetItem([label])
         tree_item.setFlags(tree_item.flags() | Qt.ItemIsEditable)
-        tree_item.setData(0, Qt.UserRole, graphics_item)
+        tree_item._graphics_item = graphics_item
         
         if parent_tree_item:
             parent_tree_item.addChild(tree_item)
@@ -142,7 +142,7 @@ class StructurePanel(QWidget):
 
     def on_tree_item_changed(self, item: QTreeWidgetItem, column: int) -> None:
         """Update model name when tree item text is edited."""
-        graphics_item = item.data(0, Qt.UserRole)
+        graphics_item = getattr(item, '_graphics_item', None)
         if graphics_item and hasattr(graphics_item, 'model'):
             graphics_item.model.name = item.text(0)
 
@@ -156,9 +156,12 @@ class StructurePanel(QWidget):
         try:
             self.scene.clearSelection()
             for tree_item in self.tree_widget.selectedItems():
-                graphics_item = tree_item.data(0, Qt.UserRole)
-                if graphics_item:
-                    graphics_item.setSelected(True)
+                try:
+                    graphics_item = getattr(tree_item, '_graphics_item', None)
+                    if graphics_item:
+                        graphics_item.setSelected(True)
+                except RuntimeError:
+                    continue
         finally:
             self.scene.blockSignals(False)
         
@@ -180,10 +183,16 @@ class StructurePanel(QWidget):
             for item in selected_items:
                 if item in self.item_map:
                     tree_item = self.item_map[item]
-                    tree_item.setSelected(True)
-                    parent = tree_item.parent()
-                    while parent:
-                        parent.setExpanded(True)
-                        parent = parent.parent()
+                    try:
+                        # Check if internal C++ object is still valid
+                        _ = tree_item.text(0)
+                        tree_item.setSelected(True)
+                        p = tree_item.parent()
+                        while p:
+                            p.setExpanded(True)
+                            p = p.parent()
+                    except RuntimeError:
+                        # Item was deleted but still in map
+                        continue
         finally:
             self.tree_widget.blockSignals(False)

@@ -34,8 +34,18 @@ class TableEditorItem(BaseEditorItem, QGraphicsRectItem):
             self.model.props["num_rows_editor"] = len(data) if data else 3
             
         from ..handles import ResizeHandle
-        self._handle = ResizeHandle(ResizeHandle.BOTTOM_RIGHT, self)
-        self._handle.setVisible(False)
+        self._handles = [
+            ResizeHandle(ResizeHandle.TOP_LEFT, self),
+            ResizeHandle(ResizeHandle.TOP_RIGHT, self),
+            ResizeHandle(ResizeHandle.BOTTOM_RIGHT, self),
+            ResizeHandle(ResizeHandle.BOTTOM_LEFT, self),
+            ResizeHandle(ResizeHandle.TOP, self),
+            ResizeHandle(ResizeHandle.BOTTOM, self),
+            ResizeHandle(ResizeHandle.LEFT, self),
+            ResizeHandle(ResizeHandle.RIGHT, self),
+        ]
+        for h in self._handles:
+            h.setVisible(False)
 
     def paint(self, painter, option, widget):
         painter.save()
@@ -60,17 +70,9 @@ class TableEditorItem(BaseEditorItem, QGraphicsRectItem):
             col_w = self.rect().width() / cols
             
             font_size_pt = float(self.model.props.get("font_size", 10))
-            # Convert pt to mm (scene units)
-            # Use same logic as TextBox for consistency
             mm_size = font_size_pt * (25.4 / 72.0)
             
             font = QFont("Arial")
-            font.setPixelSize(int(mm_size) if int(mm_size) > 0 else 1) # Ensure at least 1 unit if round down to 0
-            # Ideally use setPixelSize(mm_size) if PySide handles float, but explicit int is safer against TypeErrors
-            # If precision is poor, we might need a transform hack, but let's try this first as TextBox uses it.
-            # Wait, checking textbox.py: "font.setPixelSize(mm_size)". mm_size is float.
-            # PySide6 likely accepts float and rounds or handles it. I will pass int to be safe or float if tested.
-            # Let's try passing the float as in textbox.py, assuming PySide handles it.
             font.setPixelSize(mm_size)
             painter.setFont(font)
             
@@ -90,7 +92,6 @@ class TableEditorItem(BaseEditorItem, QGraphicsRectItem):
                     try:
                         text = str(data[r][c])
                     except (IndexError, KeyError, TypeError):
-                        # Handle missing or invalid cell data
                         text = ""
                         
                     # Alignment and padding
@@ -101,49 +102,53 @@ class TableEditorItem(BaseEditorItem, QGraphicsRectItem):
         painter.restore()
         self.paint_lock_icons(painter)
 
-        if "row_height" not in self.model.props:
-            # Default row height in mm (approx 20pt)
-            self.model.props["row_height"] = 7.0
-
+    def create_properties_widget(self, parent):
+        from PySide6.QtWidgets import QWidget, QFormLayout, QTextEdit, QLabel
+        widget = QWidget(parent)
+        layout = QFormLayout(widget)
+        layout.setContentsMargins(0, 0, 0, 0)
+        
+        layout.addRow(QLabel("<b>Table Data (CSV):</b>"))
+        data_edit = QTextEdit()
+        
+        # Convert data list to CSV string
+        data = self.model.props.get("data", [])
+        csv_text = "\n".join([",".join([str(cell) for cell in row]) for row in data])
+        data_edit.setPlainText(csv_text)
+        data_edit.setMinimumHeight(100)
+        
         def on_data_changed():
             lines = data_edit.toPlainText().strip().split("\n")
             if not lines or (len(lines) == 1 and not lines[0]):
-                data = []
-                self.model.props["data"] = []
+                new_data = []
             else:
-                data = [l.split(",") for l in lines]
-                self.model.props["data"] = data
+                new_data = [l.split(",") for l in lines]
             
-            # Recalculate height based on new row count
-            rows = len(data) if data else 1
-            # Ensure minimum 1 row for visibility
-            if rows < 1: rows = 1
+            self.model.props["data"] = new_data
             
-            row_h = self.model.props.get("row_height", 7.0)
-            new_h = rows * row_h
-            
-            self.setRect(self.rect().x(), self.rect().y(), self.rect().width(), new_h)
+            # Recalculate height based on new row count if auto-height desired
+            # For now, keep current rect but trigger repaint
             self.update()
             
         data_edit.textChanged.connect(on_data_changed)
         layout.addRow(data_edit)
         
         return widget
- 
+  
     def get_bindable_properties(self):
         return ["data", "font_size", "theme", "header_bg_color", "stroke_color"]
 
     def setRect(self, x, y, w, h):
-        # When manually resizing, update row_height
-        data = self.model.props.get("data", [])
-        rows = len(data) if data else 1
-        if rows < 1: rows = 1
-        
-        # Calculate new row height based on new total height
-        self.model.props["row_height"] = h / rows
-        
-        super().setRect(0, 0, w, h)
+        # Update model dimensions
         if hasattr(self, 'model'):
             self.model.width = w
             self.model.height = h
+            
+            # Update row_height prop if it exists
+            data = self.model.props.get("data", [])
+            rows = len(data) if data else 1
+            if rows < 1: rows = 1
+            self.model.props["row_height"] = h / rows
+            
+        super().setRect(0, 0, w, h)
         self.update_handles()

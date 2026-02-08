@@ -3,7 +3,7 @@ Resize Handle Graphics Item.
 """
 
 from PySide6.QtWidgets import QGraphicsRectItem, QGraphicsItem
-from PySide6.QtCore import Qt, QRectF
+from PySide6.QtCore import Qt, QRectF, QPointF
 from PySide6.QtGui import QBrush, QPen, QColor, QCursor, QPainter
 
 class ResizeHandle(QGraphicsRectItem):
@@ -39,7 +39,7 @@ class ResizeHandle(QGraphicsRectItem):
 
     def paint(self, painter, option, widget):
         """Draw as a professional square with antialiasing."""
-        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         painter.setBrush(self.brush())
         painter.setPen(self.pen())
         painter.drawRect(self.rect())
