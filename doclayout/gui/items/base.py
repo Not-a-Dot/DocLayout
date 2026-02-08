@@ -42,6 +42,13 @@ class BaseEditorItem:
             parent = parent.parentItem()
             
         super().mousePressEvent(event)
+    
+    def mouseReleaseEvent(self, event):
+        """Clear alignment guides when mouse is released."""
+        super().mouseReleaseEvent(event)
+        if self.scene() and hasattr(self.scene(), 'alignment'):
+            self.scene().alignment.guide_lines = []
+            self.scene().update()
 
     def itemChange(self, change, value):
         if change == QGraphicsItem.ItemSelectedChange:

@@ -73,7 +73,9 @@
         "image": "Imagem",
         "table": "Tabela",
         "kv_box": "Caixa Chave-Valor",
-        "container": "Contêiner"
+        "container": "Contêiner",
+        "items": "Itens",
+        "blocks": "Blocos"
     },
     "status": {
         "ready": "Pronto",

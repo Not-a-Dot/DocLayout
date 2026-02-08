@@ -150,6 +150,8 @@ class StructurePanel(QWidget):
         """Sync tree selection to graphics scene selection."""
         if self.scene.signalsBlocked():
              return
+        
+        # Block signals temporarily to avoid recursion
         self.scene.blockSignals(True)
         try:
             self.scene.clearSelection()
@@ -159,6 +161,9 @@ class StructurePanel(QWidget):
                     graphics_item.setSelected(True)
         finally:
             self.scene.blockSignals(False)
+        
+        # Manually emit selectionChanged so PropertyEditor gets notified
+        self.scene.selectionChanged.emit()
 
     def on_scene_selection_changed(self) -> None:
         """Sync scene selection to tree selection."""

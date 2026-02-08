@@ -73,7 +73,9 @@
         "image": "Image",
         "table": "Table",
         "kv_box": "Key-Value Box",
-        "container": "Container"
+        "container": "Container",
+        "items": "Items",
+        "blocks": "Blocks"
     },
     "status": {
         "ready": "Ready",

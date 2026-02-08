@@ -1,0 +1,19 @@
+{
+  "id": "4e215858-52a9-42f4-9095-2252b8a102ec",
+  "type": "kv_box",
+  "x": 2.0,
+  "y": 13.0,
+  "width": 70.0,
+  "height": 5.0,
+  "props": {
+    "key_text": "Cliente:",
+    "text": "[Value]",
+    "split_ratio": 0.25000000000000006,
+    "split_type": "fixed",
+    "split_fixed": 14.0,
+    "show_outline": true
+  },
+  "bindings": [],
+  "children": [],
+  "name": "nome_cliente"
+}

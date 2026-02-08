@@ -26,20 +26,25 @@ class DockManager:
         p.prop_dock.setWidget(p.prop_widget)
         p.addDockWidget(Qt.RightDockWidgetArea, p.prop_dock)
 
-        # Library Dock
+        # Library Dock (Tools + Structure)
         p.library_dock = QDockWidget("Library", p)
         p.library_dock.setObjectName("library_dock")
         p.library_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
         
         container = QWidget()
         layout = QVBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
         
-        from ..panels import BlocksPanel, StructurePanel
+        from ..panels import BlocksPanel, StructurePanel, ToolsPanel
         p.blocks_panel = BlocksPanel(p.scene)
+        p.tools_panel = ToolsPanel(p.scene, p.actions_manager, p.blocks_panel)
         p.structure_panel = StructurePanel(p.scene)
         
-        layout.addWidget(QLabel("<b>Blocks Library</b>"))
-        layout.addWidget(p.blocks_panel)
+        # Tools Panel (Items + Blocks tabs)
+        layout.addWidget(p.tools_panel)
+        
+        # Structure Panel
         layout.addWidget(QLabel("<b>Document Structure</b>"))
         layout.addWidget(p.structure_panel)
         

@@ -1,0 +1,311 @@
+{
+  "id": "ad7b4989-1eda-44fc-b1b7-d41e6e21ec59",
+  "type": "container",
+  "x": 5.0,
+  "y": 5.0,
+  "width": 200.0,
+  "height": 50.0,
+  "props": {
+    "show_outline": true
+  },
+  "bindings": [],
+  "children": [
+    {
+      "id": "d7ce3dda-3209-444c-a149-2057fb352f12",
+      "type": "kv_box",
+      "x": 64.0,
+      "y": 0.0,
+      "width": 135.0,
+      "height": 10.0,
+      "props": {
+        "key_text": "Ordem de serviço:",
+        "text": "[Value]",
+        "font_family": "Arial",
+        "font_size": 25,
+        "font_bold": false,
+        "font_italic": false,
+        "split_type": "fixed",
+        "split_fixed": 65.0,
+        "show_outline": false
+      },
+      "bindings": [],
+      "children": [],
+      "name": "ordem_de_servico"
+    },
+    {
+      "id": "a8d9d106-7e7a-4ee4-8690-27160022fe08",
+      "type": "container",
+      "x": 0.0,
+      "y": 0.0,
+      "width": 55.0,
+      "height": 50.0,
+      "props": {
+        "bg_type": "transparent",
+        "show_outline": true
+      },
+      "bindings": [],
+      "children": [
+        {
+          "id": "7a23a20f-7b52-4a46-9352-ac6bb4cd0a1c",
+          "type": "image",
+          "x": 5.0,
+          "y": 5.0,
+          "width": 45.0,
+          "height": 40.0,
+          "props": {
+            "image_path": "/home/carlos/Imagens/1739286843_new_photo_6018094745248707130_y.realesrgan (1).png"
+          },
+          "bindings": [],
+          "children": [],
+          "name": "logo_empresa"
+        }
+      ],
+      "name": "container_imagen"
+    },
+    {
+      "id": "cfa282b4-6a89-4b42-a472-70e7279da41c",
+      "type": "container",
+      "x": 55.0,
+      "y": 10.0,
+      "width": 74.0,
+      "height": 40.0,
+      "props": {
+        "show_outline": true
+      },
+      "bindings": [],
+      "children": [
+        {
+          "id": "2732923e-b584-4b20-a2b4-59787225d840",
+          "type": "kv_box",
+          "x": 2.0,
+          "y": 33.0,
+          "width": 70.0,
+          "height": 5.0,
+          "props": {
+            "key_text": "CPF/CNPJ:",
+            "text": "[Value]",
+            "split_type": "fixed",
+            "split_fixed": 17.0,
+            "show_outline": true
+          },
+          "bindings": [],
+          "children": [],
+          "name": "cpf-cnpj_cliente"
+        },
+        {
+          "id": "f8b80cdd-b0a9-488c-b0cd-2208a9b305ab",
+          "type": "kv_box",
+          "x": 2.0,
+          "y": 28.0,
+          "width": 70.0,
+          "height": 5.0,
+          "props": {
+            "key_text": "Telefone:",
+            "text": "[Value]",
+            "split_type": "fixed",
+            "split_fixed": 16.0,
+            "show_outline": true
+          },
+          "bindings": [],
+          "children": [],
+          "name": "telefone_cliente"
+        },
+        {
+          "id": "ea76996b-971b-41e5-ac4b-0935e64e4a68",
+          "type": "kv_box",
+          "x": 2.0,
+          "y": 23.0,
+          "width": 70.0,
+          "height": 5.0,
+          "props": {
+            "key_text": "Cidade:",
+            "text": "[Value]",
+            "split_type": "fixed",
+            "split_fixed": 13.0,
+            "show_outline": true
+          },
+          "bindings": [],
+          "children": [],
+          "name": "cidade_cliente"
+        },
+        {
+          "id": "dcfb809e-d2a4-47a5-a80e-d95e19175025",
+          "type": "kv_box",
+          "x": 2.0,
+          "y": 18.0,
+          "width": 70.0,
+          "height": 5.0,
+          "props": {
+            "key_text": "Endereço:",
+            "text": "[Value]",
+            "split_type": "fixed",
+            "split_fixed": 17.0,
+            "show_outline": true
+          },
+          "bindings": [],
+          "children": [],
+          "name": "endereco_cliente"
+        },
+        {
+          "id": "4e215858-52a9-42f4-9095-2252b8a102ec",
+          "type": "kv_box",
+          "x": 2.0,
+          "y": 13.0,
+          "width": 70.0,
+          "height": 5.0,
+          "props": {
+            "key_text": "Cliente:",
+            "text": "[Value]",
+            "split_ratio": 0.25000000000000006,
+            "split_type": "fixed",
+            "split_fixed": 14.0,
+            "show_outline": true
+          },
+          "bindings": [],
+          "children": [],
+          "name": "nome_cliente"
+        },
+        {
+          "id": "23af7a9d-143e-48c9-ad8e-ec6c63460014",
+          "type": "text",
+          "x": 2.0,
+          "y": 4.0,
+          "width": 59.0,
+          "height": 6.0,
+          "props": {
+            "text": "Dados do cliente:"
+          },
+          "bindings": [],
+          "children": [],
+          "name": "texto_cliente"
+        }
+      ],
+      "name": "container_dados-do-cliente"
+    },
+    {
+      "id": "f14eead5-2c5c-4e26-a610-f3cdbcccf174",
+      "type": "container",
+      "x": 129.0,
+      "y": 10.0,
+      "width": 71.0,
+      "height": 40.0,
+      "props": {
+        "show_outline": true
+      },
+      "bindings": [],
+      "children": [
+        {
+          "id": "d31925b7-3f3d-49d9-a2fb-920fd92c2fb2",
+          "type": "kv_box",
+          "x": 2.0,
+          "y": 33.0,
+          "width": 65.0,
+          "height": 5.0,
+          "props": {
+            "key_text": "CPF/CNPJ:",
+            "text": "[Value]",
+            "split_ratio": 0.25000000000000006,
+            "split_type": "fixed",
+            "split_fixed": 17.0,
+            "show_outline": true
+          },
+          "bindings": [],
+          "children": [],
+          "name": "cnpj_empresa"
+        },
+        {
+          "id": "d98710aa-a648-4364-bea9-480f944512c7",
+          "type": "kv_box",
+          "x": 2.0,
+          "y": 28.0,
+          "width": 65.0,
+          "height": 5.0,
+          "props": {
+            "key_text": "Telefone:",
+            "text": "[Value]",
+            "split_ratio": 0.25000000000000006,
+            "split_type": "fixed",
+            "split_fixed": 16.0,
+            "show_outline": true
+          },
+          "bindings": [],
+          "children": [],
+          "name": "telefone_empresa"
+        },
+        {
+          "id": "6e48c511-eb73-40e0-bd24-92390d7557ac",
+          "type": "kv_box",
+          "x": 2.0,
+          "y": 23.0,
+          "width": 65.0,
+          "height": 5.0,
+          "props": {
+            "key_text": "Cidade:",
+            "text": "[Value]",
+            "split_ratio": 0.25000000000000006,
+            "split_type": "fixed",
+            "split_fixed": 13.0,
+            "show_outline": true
+          },
+          "bindings": [],
+          "children": [],
+          "name": "cidade_empresa"
+        },
+        {
+          "id": "9a5d8bca-d94c-4c44-b699-d57b7bbb2ccd",
+          "type": "kv_box",
+          "x": 2.0,
+          "y": 18.0,
+          "width": 65.0,
+          "height": 5.0,
+          "props": {
+            "key_text": "Endereço:",
+            "text": "[Value]",
+            "split_ratio": 0.25000000000000006,
+            "split_type": "fixed",
+            "split_fixed": 17.0,
+            "show_outline": true
+          },
+          "bindings": [],
+          "children": [],
+          "name": "endereco_empresa"
+        },
+        {
+          "id": "d4a0473c-a255-4ffa-bd22-5abb14b4ec45",
+          "type": "kv_box",
+          "x": 2.0,
+          "y": 13.0,
+          "width": 65.0,
+          "height": 5.0,
+          "props": {
+            "key_text": "Empresa:",
+            "text": "[Value]",
+            "split_ratio": 0.25000000000000006,
+            "split_type": "fixed",
+            "split_fixed": 16.0,
+            "show_outline": true
+          },
+          "bindings": [],
+          "children": [],
+          "name": "nome_empresa"
+        },
+        {
+          "id": "e2fbb984-87c8-4eb8-8051-2b38e6dd3108",
+          "type": "text",
+          "x": 2.0,
+          "y": 7.0,
+          "width": 49.0,
+          "height": 3.0,
+          "props": {
+            "text": "Dados da empresa:"
+          },
+          "bindings": [],
+          "children": [],
+          "name": "texto_empresa"
+        }
+      ],
+      "name": "container_dados-da-impresa"
+    }
+  ],
+  "name": "container_cabecalho"
+}
