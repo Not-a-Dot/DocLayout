@@ -12,7 +12,7 @@ class ToolManager:
     """
     Manages item creation based on active tools.
     """
-    CREATION_TOOLS = ["rect", "text", "line", "image", "kvbox", "container", "table"]
+    CREATION_TOOLS = ["rect", "text", "textbox", "line", "image", "kvbox", "container", "table"]
 
     @staticmethod
     def create_item(scene, tool_name: str, x: float, y: float) -> None:

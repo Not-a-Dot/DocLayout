@@ -477,11 +477,13 @@ class TemplateExporter:
             italic = elem.props.get("font_italic", False)
             
             # Apply padding (visual only for now, reducing text width/pos)
-            padding = 2.0 if (show_border or bg_color) else 0.0
-            text_x = x + padding
-            text_w = w - (padding * 2) if w else None
+            # Use 1.0mm padding consistent with Editor
+            padding_pt = mm_to_pt(1.0) if (show_border or bg_color) else 0.0
             
-            renderer.draw_text(text_x, y + padding, elem.props.get("text", ""), 
+            text_x = x + padding_pt
+            text_w = w - (padding_pt * 2) if w else None
+            
+            renderer.draw_text(text_x, y + padding_pt, elem.props.get("text", ""), 
                                font_name=font_name, font_size=font_size, 
                                color=color, alignment=align, width=text_w,
                                bold=bold, italic=italic, wrap=True)

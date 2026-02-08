@@ -85,12 +85,58 @@ class TextBoxEditorItem(BaseEditorItem, QGraphicsTextItem):
             self.setZValue(100 if value else 0)
         return super().itemChange(change, value)
 
+    def paint(self, painter, option, widget=None):
+        """Custom paint to draw background and border."""
+        # 1. Draw Background & Border matches ReportLabRenderer logic
+        props = self.model.props
+        show_border = props.get("show_border", False)
+        bg_color = props.get("background_color", "")
+        
+        # Determine if we need to draw anything custom
+        if show_border or bg_color:
+            painter.save()
+            rect = self.boundingRect()
+            
+            # Setup Pen (Border)
+            if show_border:
+                from PySide6.QtGui import QPen, QColor
+                border_color = props.get("border_color", "black")
+                border_width = float(props.get("border_width", 1.0))
+                # Adjust for pen width to draw inside/center? Qt draws centered on line.
+                # PDF usually draws text inside.
+                pen = QPen(QColor(border_color))
+                pen.setWidthF(border_width) # width in scene units (mm) if pen is cosmetic? No, scene units.
+                painter.setPen(pen)
+            else:
+                painter.setPen(Qt.NoPen)
+                
+            # Setup Brush (Background)
+            if bg_color:
+                from PySide6.QtGui import QBrush, QColor
+                painter.setBrush(QBrush(QColor(bg_color)))
+            else:
+                painter.setBrush(Qt.NoBrush)
+                
+            painter.drawRect(rect)
+            painter.restore()
+            
+            # Update Document Margin for Text
+            # 1.0mm padding if styled
+            # Use idempotent check to avoid infinite recursion in paint -> update -> paint
+            if abs(self.document().documentMargin() - 1.0) > 0.01:
+                self.document().setDocumentMargin(1.0)
+        else:
+            if abs(self.document().documentMargin() - 0.0) > 0.01:
+                self.document().setDocumentMargin(0.0)
+            
+        # 2. Draw Text (super implementation)
+        super().paint(painter, option, widget)
+
     def create_properties_widget(self, parent) -> TextPropertiesWidget:
-        # We only need the text content editor here, as other props 
-        # (font, color, alignment) are handled by the main panel or could be refactored
-        # For now, let's keep using TextPropertiesWidget but we might want to simplify it later
-        # or properly integrate generic font properties into the main panel
-        return TextPropertiesWidget(self, parent)
+        # Connect update to trigger repaint
+        w = TextPropertiesWidget(self, parent)
+        # We hook into the widget updates indirectly via scene.update() which calls paint()
+        return w
 
     def get_bindable_properties(self) -> list:
         return ["text", "font_family", "font_size", "color", "font_bold", "font_italic", "text_align"]

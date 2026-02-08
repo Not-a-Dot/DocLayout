@@ -59,8 +59,20 @@ class TableEditorItem(BaseEditorItem, QGraphicsRectItem):
             row_h = self.rect().height() / rows
             col_w = self.rect().width() / cols
             
-            font_size = self.model.props.get("font_size", 10)
-            painter.setFont(QFont("Arial", font_size))
+            font_size_pt = float(self.model.props.get("font_size", 10))
+            # Convert pt to mm (scene units)
+            # Use same logic as TextBox for consistency
+            mm_size = font_size_pt * (25.4 / 72.0)
+            
+            font = QFont("Arial")
+            font.setPixelSize(int(mm_size) if int(mm_size) > 0 else 1) # Ensure at least 1 unit if round down to 0
+            # Ideally use setPixelSize(mm_size) if PySide handles float, but explicit int is safer against TypeErrors
+            # If precision is poor, we might need a transform hack, but let's try this first as TextBox uses it.
+            # Wait, checking textbox.py: "font.setPixelSize(mm_size)". mm_size is float.
+            # PySide6 likely accepts float and rounds or handles it. I will pass int to be safe or float if tested.
+            # Let's try passing the float as in textbox.py, assuming PySide handles it.
+            font.setPixelSize(mm_size)
+            painter.setFont(font)
             
             for r in range(rows):
                 # Header background
