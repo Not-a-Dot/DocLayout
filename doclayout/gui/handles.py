@@ -26,8 +26,8 @@ class ResizeHandle(QGraphicsRectItem):
         super().__init__(0, 0, self.SIZE, self.SIZE, parent)
         self._position = position
         
-        # Professional look: White fill, Blue border
-        self.setBrush(QBrush(Qt.white))
+        # Professional look: Semi-transparent White fill, Blue border
+        self.setBrush(QBrush(QColor(255, 255, 255, 180)))
         self.setPen(QPen(QColor("#1a73e8"), 0.3)) # Google Blue
         
         self.setFlags(QGraphicsItem.ItemIsMovable) 
@@ -38,7 +38,7 @@ class ResizeHandle(QGraphicsRectItem):
         self._update_position()
 
     def paint(self, painter, option, widget):
-        """Draw as a professional square (fallback to default but with antialiasing)."""
+        """Draw as a professional square with antialiasing."""
         painter.setRenderHint(QPainter.Antialiasing)
         painter.setBrush(self.brush())
         painter.setPen(self.pen())
@@ -81,10 +81,10 @@ class ResizeHandle(QGraphicsRectItem):
             self.setPos(rect.right() - s/2, rect.center().y() - s/2)
             
     def mousePressEvent(self, event):
-        # Start resize
+        # Start resize - Store reference state
         self._start_pos = event.scenePos()
-        self._start_rect = self.parentItem().boundingRect()
         self._start_item_pos = self.parentItem().pos()
+        self._start_rect = self.parentItem().boundingRect()
         event.accept()
 
     def mouseMoveEvent(self, event):
@@ -92,97 +92,74 @@ class ResizeHandle(QGraphicsRectItem):
         if not item:
             return
             
-        # Delta calculation needs complex logic for rotation (if any)
-        # For now, assuming no rotation.
-        
-        # Calculate new rect based on handle movement
-        # This is tricky because QGraphicsRectItem defines rect from (0,0) usually.
-        # If we change X, Y, we move the item. If we change W, H, we resize.
-        
-        # NOTE: DocLayout model uses (x, y, width, height).
-        # Wrapper Item (RectEditorItem) uses QGraphicsRectItem(0, 0, w, h).
-        # So Top-Left of item is always (0,0) in local coords.
-        # Item Pos is (x,y) in scene.
-        
-        # If dragging Bottom-Right: Change Width/Height.
-        # If dragging Top-Left: Change Pos X/Y AND Change Width/Height.
-        
-        pos = event.scenePos()
-        # Snap logic here? Yes, if we want resize snap.
-        # Access scene grid size?
-        scene = self.scene()
         pos = event.scenePos()
         scene = self.scene()
         if scene and scene.alignment.snap_enabled:
              pos.setX(round(pos.x() / scene.alignment.grid_size) * scene.alignment.grid_size)
              pos.setY(round(pos.y() / scene.alignment.grid_size) * scene.alignment.grid_size)
         
-        # Local position of the mouse in the parent item
-        local_pos = item.mapFromScene(pos)
+        # Calculate Delta from START position to current SNAPPED position
+        delta = pos - self._start_pos
         
-        # Initial rect and pos
-        rect = item.boundingRect()
-        new_rect = QRectF(rect)
-        new_pos = item.pos()
+        # Reference values
+        base_rect = self._start_rect
+        base_pos = self._start_item_pos
+        
+        new_rect = QRectF(base_rect)
+        new_pos = QPointF(base_pos)
         
         min_size = scene.alignment.grid_size if scene else 5.0
         
-        # RESIZE LOGIC PER HANDLE
+        # Fixed logic: Apply delta to the START state
         if self._position == self.BOTTOM_RIGHT:
-            new_rect.setWidth(max(min_size, local_pos.x()))
-            new_rect.setHeight(max(min_size, local_pos.y()))
+            new_rect.setWidth(max(min_size, base_rect.width() + delta.x()))
+            new_rect.setHeight(max(min_size, base_rect.height() + delta.y()))
             
         elif self._position == self.BOTTOM_LEFT:
-            # Shift X (Pos) and Widh (Rect)
-            dx = local_pos.x()
-            if rect.width() - dx >= min_size:
-                new_pos.setX(new_pos.x() + dx)
-                new_rect.setWidth(rect.width() - dx)
-            new_rect.setHeight(max(min_size, local_pos.y()))
+            dw = -delta.x()
+            if base_rect.width() + dw >= min_size:
+                new_pos.setX(base_pos.x() + delta.x())
+                new_rect.setWidth(base_rect.width() + dw)
+            new_rect.setHeight(max(min_size, base_rect.height() + delta.y()))
             
         elif self._position == self.TOP_RIGHT:
-            # Shift Y (Pos) and Height (Rect)
-            dy = local_pos.y()
-            if rect.height() - dy >= min_size:
-                new_pos.setY(new_pos.y() + dy)
-                new_rect.setHeight(rect.height() - dy)
-            new_rect.setWidth(max(min_size, local_pos.x()))
+            dh = -delta.y()
+            if base_rect.height() + dh >= min_size:
+                new_pos.setY(base_pos.y() + delta.y())
+                new_rect.setHeight(base_rect.height() + dh)
+            new_rect.setWidth(max(min_size, base_rect.width() + delta.x()))
             
         elif self._position == self.TOP_LEFT:
-            # Shift X, Y (Pos) and Width, Height (Rect)
-            dx = local_pos.x()
-            dy = local_pos.y()
-            if rect.width() - dx >= min_size:
-                new_pos.setX(new_pos.x() + dx)
-                new_rect.setWidth(rect.width() - dx)
-            if rect.height() - dy >= min_size:
-                new_pos.setY(new_pos.y() + dy)
-                new_rect.setHeight(rect.height() - dy)
+            dw, dh = -delta.x(), -delta.y()
+            if base_rect.width() + dw >= min_size:
+                new_pos.setX(base_pos.x() + delta.x())
+                new_rect.setWidth(base_rect.width() + dw)
+            if base_rect.height() + dh >= min_size:
+                new_pos.setY(base_pos.y() + delta.y())
+                new_rect.setHeight(base_rect.height() + dh)
                 
         elif self._position == self.TOP:
-            dy = local_pos.y()
-            if rect.height() - dy >= min_size:
-                new_pos.setY(new_pos.y() + dy)
-                new_rect.setHeight(rect.height() - dy)
+            dh = -delta.y()
+            if base_rect.height() + dh >= min_size:
+                new_pos.setY(base_pos.y() + delta.y())
+                new_rect.setHeight(base_rect.height() + dh)
                 
         elif self._position == self.BOTTOM:
-            new_rect.setHeight(max(min_size, local_pos.y()))
+            new_rect.setHeight(max(min_size, base_rect.height() + delta.y()))
             
         elif self._position == self.LEFT:
-            dx = local_pos.x()
-            if rect.width() - dx >= min_size:
-                new_pos.setX(new_pos.x() + dx)
-                new_rect.setWidth(rect.width() - dx)
+            dw = -delta.x()
+            if base_rect.width() + dw >= min_size:
+                new_pos.setX(base_pos.x() + delta.x())
+                new_rect.setWidth(base_rect.width() + dw)
                 
         elif self._position == self.RIGHT:
-            new_rect.setWidth(max(min_size, local_pos.x()))
+            new_rect.setWidth(max(min_size, base_rect.width() + delta.x()))
             
         # Apply changes
         item.setPos(new_pos)
         if hasattr(item, 'setRect'):
             item.setRect(0, 0, new_rect.width(), new_rect.height())
-        elif hasattr(item, 'setX'): # Generic fallback?
-             pass 
 
         # Sync model
         if hasattr(item, 'model'):
