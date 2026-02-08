@@ -218,3 +218,15 @@ class MainWindow(QMainWindow):
         if ok and name:
             state = settings.value(f"layout_{name}")
             if state: self.restoreState(state)
+
+    def set_language(self, language_code: str) -> None:
+        """Change application language and refresh UI."""
+        from doclayout.core.i18n import get_translation_manager
+        
+        tm = get_translation_manager()
+        if tm.set_language(language_code):
+            self.status_bar.showMessage(tr('status.ready'))
+            self.menuBar().clear()
+            from .menus import MenuManager
+            MenuManager.setup_menus(self)
+            logger.info("Language changed to: %s", language_code)
