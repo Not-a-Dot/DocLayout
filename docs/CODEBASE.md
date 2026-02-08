@@ -457,6 +457,7 @@ Core editing coordinator extending QGraphicsScene.
 - `itemMoved`: Item geometry changed
 - `itemRemoved`: Item deleted
 - `hierarchyChanged`: Parent-child relationships changed
+- `sceneRestored`: Emitted after an undo/redo state is fully restored
 
 **Key Features:**
 - Grid and snap-to-grid rendering
@@ -471,9 +472,11 @@ Core editing coordinator extending QGraphicsScene.
 - `set_snap(enabled)`: Toggle snap-to-grid
 - `set_grid_size(size)`: Set grid spacing
 - `set_page_size(width, height)`: Change page dimensions
-- `delete_selected()`: Delete selected items
+- `delete_selected()`: Delete selected items (captures snapshot)
 - `copy_selected()`, `paste()`: Clipboard operations
 - `group_selected()`: Group items into container
+- `undo()`, `redo()`: Navigate the state stack
+- `save_snapshot()`: Capture current template state as JSON
 
 #### `alignment.py`
 
@@ -623,8 +626,10 @@ Visual handles for resizing elements.
 
 **Features:**
 - 8 resize positions (corners and edges)
+- Professional aesthetic: Semi-transparent white fill with blue borders
 - Aspect ratio preservation (Shift key)
 - Snap-to-grid during resize
+- **Snapshots**: Captures state on `mousePress` and `mouseRelease` for Undo/Redo
 
 #### `themes.py`
 
@@ -814,6 +819,28 @@ Application launcher for the GUI editor.
 
 ---
 
+## Undo/Redo System
+
+The editor implements a robust, snapshot-based Undo/Redo mechanism located in `EditorScene`.
+
+### Mechanism:
+1. **Snapshots**: The entire `Template` state is serialized to a JSON string using Pydantic's `model_dump_json()`.
+2. **Stacks**: `_undo_stack` and `_redo_stack` store these serialized strings.
+3. **Triggers**: Snapshots are captured automatically upon:
+   - Mouse release after moving an item.
+   - Mouse release after resizing.
+   - Focusing out of a text editor (after content change).
+   - Item creation and deletion.
+   - Z-order changes and grouping.
+   - Property edits in the sidebar.
+4. **Restoration**: When `undo()` or `redo()` is called:
+   - The scene clears all current `EditorItem` objects.
+   - A new `Template` is validated from the JSON snapshot.
+   - The scene hierarchy is recursively reconstructed using `get_item_for_model()`.
+   - The `sceneRestored` signal is emitted to refresh UI panels (Structure, Properties).
+
+---
+
 ## Dependencies
 
 ### Core
@@ -871,8 +898,7 @@ Application launcher for the GUI editor.
 2. **Images**: No image transformation (rotation, skew) in PDF output
 3. **Text**: No rich text formatting (mixed styles within single element)
 4. **Tables**: Limited styling options compared to full spreadsheet applications
-5. **Undo/Redo**: Not implemented in current version
-6. **Multi-page**: Templates are single-page (thermal paper uses dynamic height)
+5. **Multi-page**: Templates are single-page (thermal paper uses dynamic height)
 
 ---
 
@@ -881,9 +907,18 @@ Application launcher for the GUI editor.
 - Custom font support via TTF embedding
 - Rich text editing with inline formatting
 - Multi-page template support
-- Undo/redo system
 - Template variables panel in GUI
 - Block library management UI
 - Export to formats beyond PDF (HTML, SVG)
 - Collaborative editing features
-## Internationalization\n\nDocLayout supports multiple languages via JSON translation files. See [I18N.md](I18N.md) for complete documentation.\n\n**Quick Start:**\n```python\nfrom doclayout.core.i18n import tr\ntitle = tr('menu.file.new')  # Auto-translated\n```\n\n**Supported Languages:** pt-BR (default), en-US
+## Internationalization
+
+DocLayout supports multiple languages via JSON translation files. See [I18N.md](I18N.md) for complete documentation.
+
+**Quick Start:**
+```python
+from doclayout.core.i18n import tr
+title = tr('menu.file.new')  # Auto-translated
+```
+
+**Supported Languages:** pt-BR (default), en-US

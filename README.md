@@ -10,8 +10,15 @@ The project follows a modular architecture:
 - `doclayout/engine`: Layout engine that processes templates and blocks.
 - `doclayout/adapters`: Adapters for external libraries (e.g., ReportLab).
 - `doclayout/gui`: The visual editor built with PySide6.
+- `doclayout/themes`: UI theme definitions and styling.
 
-## Requirements
+## Features
+
+- **Visual Editor**: Drag-and-drop hierarchy for complex layouts.
+- **Undo/Redo**: Comprehensive state management (Ctrl+Z / Ctrl+Shift+Z).
+- **Responsive Elements**: KV-Boxes and TextBoxes that adapt to content.
+- **PDF Export**: High-fidelity generation with ReportLab backend.
+- **Reusable Blocks**: Create and instantiate layout components.
 
 - Python 3.10+
 - PySide6
@@ -28,12 +35,6 @@ pip install -r requirements.txt
 
 ```bash
 python -m doclayout.main
-```
-
-## Running Tests
-
-```bash
-pytest
 ```
 
 ## Documentation
