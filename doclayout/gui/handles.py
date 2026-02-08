@@ -97,45 +97,93 @@ class ResizeHandle(QGraphicsRectItem):
              pos.setX(round(pos.x() / scene.alignment.grid_size) * scene.alignment.grid_size)
              pos.setY(round(pos.y() / scene.alignment.grid_size) * scene.alignment.grid_size)
         
-        # Current logic is simplified
-        if self._position == self.BOTTOM_RIGHT:
-             # Calculate new width/height relative to item position
-             # Item (0,0) is TopLeft. Event Scene Pos - Item Scene Pos = Local Pos
-             local_pos = item.mapFromScene(pos)
-             new_w = local_pos.x()
-             new_h = local_pos.y()
-             
-             new_w = max(scene.alignment.grid_size, new_w) if scene else max(10, new_w)
-             new_h = max(scene.alignment.grid_size, new_h) if scene else max(10, new_h)
-             
-             # Snap logic meant new_w/new_h are snapped? 
-             # pos was already snapped above if enabled.
-             
-             # Move Handle to new Corner
-             # We want the handle CENTER to be at (new_w, new_h)? 
-             # Or TopLeft of handle?
-             # _update_position sets handle centered on corner.
-             # setPos is TopLeft of handle item.
-             # In _update_position:
-             # self.setPos(rect.right() - s/2, rect.bottom() - s/2)
-             # So we should setPos(new_w - s/2, new_h - s/2)
-             
-             s = self.SIZE
-             self.setPos(new_w - s/2, new_h - s/2)
-             
-             # Update Item Rect
-             if hasattr(item, 'setRect'):
-                 item.setRect(0, 0, new_w, new_h)
-                 # Update model
-                 if hasattr(item, 'model'):
-                     item.model.width = new_w
-                     item.model.height = new_h
-                     
-                 # NEW: Emit moved signal for live property updates (Resize is a form of geometry change)
-                 if item.scene() and hasattr(item.scene(), "itemMoved"):
-                     item.scene().itemMoved.emit(item)
+        pos = event.scenePos()
+        scene = self.scene()
+        if scene and scene.alignment.snap_enabled:
+             pos.setX(round(pos.x() / scene.alignment.grid_size) * scene.alignment.grid_size)
+             pos.setY(round(pos.y() / scene.alignment.grid_size) * scene.alignment.grid_size)
         
-        # TODO: Implement other handles
+        # Local position of the mouse in the parent item
+        local_pos = item.mapFromScene(pos)
+        
+        # Initial rect and pos
+        rect = item.boundingRect()
+        new_rect = QRectF(rect)
+        new_pos = item.pos()
+        
+        min_size = scene.alignment.grid_size if scene else 5.0
+        
+        # RESIZE LOGIC PER HANDLE
+        if self._position == self.BOTTOM_RIGHT:
+            new_rect.setWidth(max(min_size, local_pos.x()))
+            new_rect.setHeight(max(min_size, local_pos.y()))
+            
+        elif self._position == self.BOTTOM_LEFT:
+            # Shift X (Pos) and Widh (Rect)
+            dx = local_pos.x()
+            if rect.width() - dx >= min_size:
+                new_pos.setX(new_pos.x() + dx)
+                new_rect.setWidth(rect.width() - dx)
+            new_rect.setHeight(max(min_size, local_pos.y()))
+            
+        elif self._position == self.TOP_RIGHT:
+            # Shift Y (Pos) and Height (Rect)
+            dy = local_pos.y()
+            if rect.height() - dy >= min_size:
+                new_pos.setY(new_pos.y() + dy)
+                new_rect.setHeight(rect.height() - dy)
+            new_rect.setWidth(max(min_size, local_pos.x()))
+            
+        elif self._position == self.TOP_LEFT:
+            # Shift X, Y (Pos) and Width, Height (Rect)
+            dx = local_pos.x()
+            dy = local_pos.y()
+            if rect.width() - dx >= min_size:
+                new_pos.setX(new_pos.x() + dx)
+                new_rect.setWidth(rect.width() - dx)
+            if rect.height() - dy >= min_size:
+                new_pos.setY(new_pos.y() + dy)
+                new_rect.setHeight(rect.height() - dy)
+                
+        elif self._position == self.TOP:
+            dy = local_pos.y()
+            if rect.height() - dy >= min_size:
+                new_pos.setY(new_pos.y() + dy)
+                new_rect.setHeight(rect.height() - dy)
+                
+        elif self._position == self.BOTTOM:
+            new_rect.setHeight(max(min_size, local_pos.y()))
+            
+        elif self._position == self.LEFT:
+            dx = local_pos.x()
+            if rect.width() - dx >= min_size:
+                new_pos.setX(new_pos.x() + dx)
+                new_rect.setWidth(rect.width() - dx)
+                
+        elif self._position == self.RIGHT:
+            new_rect.setWidth(max(min_size, local_pos.x()))
+            
+        # Apply changes
+        item.setPos(new_pos)
+        if hasattr(item, 'setRect'):
+            item.setRect(0, 0, new_rect.width(), new_rect.height())
+        elif hasattr(item, 'setX'): # Generic fallback?
+             pass 
+
+        # Sync model
+        if hasattr(item, 'model'):
+            item.model.x = new_pos.x()
+            item.model.y = new_pos.y()
+            item.model.width = new_rect.width()
+            item.model.height = new_rect.height()
+            
+        # Update all handles positions
+        if hasattr(item, 'update_handles'):
+            item.update_handles()
+            
+        # Emit move signal
+        if item.scene() and hasattr(item.scene(), "itemMoved"):
+            item.scene().itemMoved.emit(item)
         
         event.accept()
 

@@ -56,6 +56,8 @@ class AlignmentManager:
                 self.guide_lines.append(QLineF(-10000, o_rect.top(), 10000, o_rect.top()))
             if abs(m_rect.bottom() - o_rect.bottom()) < threshold:
                 self.guide_lines.append(QLineF(-10000, o_rect.bottom(), 10000, o_rect.bottom()))
+        
+        scene.update()
 
     def draw_guides(self, painter: QPainter) -> None:
         """

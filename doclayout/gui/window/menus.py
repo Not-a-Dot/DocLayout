@@ -55,9 +55,15 @@ class MenuManager:
             lang_menu.addAction(action)
             lang_group.addAction(action)
         
+        # Arrange Menu
+        arrange_menu = menubar.addMenu(tr('menu.arrange.title'))
+        arrange_menu.addAction(acts.bring_front_action)
+        arrange_menu.addAction(acts.send_back_action)
+        arrange_menu.addSeparator()
+        arrange_menu.addAction(acts.group_action)
+        
         # View Menu
         view_menu = menubar.addMenu(tr('menu.view.title'))
-        view_menu.addAction(acts.group_action)
         view_menu.addSeparator()
         
         # Themes Submenu

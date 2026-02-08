@@ -34,21 +34,26 @@ def get_item_for_model(model):
         True
     """
     from doclayout.core.models import ElementType
+    item = None
     if model.type == ElementType.RECT:
-        return RectEditorItem(model)
+        item = RectEditorItem(model)
     elif model.type == ElementType.TEXT:
-        return TextEditorItem(model)
+        item = TextEditorItem(model)
     elif model.type == ElementType.TEXT_BOX:
-        return TextBoxEditorItem(model)
+        item = TextBoxEditorItem(model)
     elif model.type == ElementType.IMAGE:
-        return ImageEditorItem(model)
+        item = ImageEditorItem(model)
     elif model.type == ElementType.LINE:
-        return LineEditorItem(model)
+        item = LineEditorItem(model)
     elif model.type == ElementType.KV_BOX:
-        return KVBoxEditorItem(model)
+        item = KVBoxEditorItem(model)
     elif model.type == ElementType.CONTAINER:
         from .container import ContainerEditorItem
-        return ContainerEditorItem(model)
+        item = ContainerEditorItem(model)
     elif model.type == ElementType.TABLE:
-        return TableEditorItem(model)
-    return None
+        item = TableEditorItem(model)
+    
+    if item and hasattr(model, 'z'):
+        item.setZValue(model.z)
+    
+    return item

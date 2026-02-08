@@ -51,7 +51,8 @@
             "distribute_h": "Distribuir Horizontalmente",
             "distribute_v": "Distribuir Verticalmente",
             "bring_front": "Trazer para Frente",
-            "send_back": "Enviar para Trás"
+            "send_back": "Enviar para Trás",
+            "group": "Agrupar"
         },
         "tools": {
             "title": "Ferramentas",

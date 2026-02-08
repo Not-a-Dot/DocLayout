@@ -54,8 +54,15 @@ class BaseEditorItem:
         if change == QGraphicsItem.ItemSelectedChange:
             # value is the new selection state
             self.update_handles(selected=value)
+            
+            # Legacy single handle update
             if value and hasattr(self, '_handle') and self._handle:
                  self._handle._update_position()
+                 
+            # New multiple handles update
+            if value and hasattr(self, '_handles'):
+                for h in self._handles:
+                    h._update_position()
 
         if change == QGraphicsItem.ItemPositionChange and self.scene():
             # Respect lock_position
@@ -83,16 +90,25 @@ class BaseEditorItem:
         return super().itemChange(change, value)
 
     def update_handles(self, selected=None):
-        """Update handle position if it exists."""
+        """Update handles positions and visibility."""
         if not hasattr(self, 'model'):
             return
             
+        if selected is None:
+            selected = self.isSelected()
+            
+        visible = selected and not self.model.lock_geometry
+            
+        # Legacy single handle
         if hasattr(self, '_handle') and self._handle:
-            if selected is None:
-                selected = self.isSelected()
-            # Hide handles if geometry is locked
-            self._handle.setVisible(selected and not self.model.lock_geometry)
+            self._handle.setVisible(visible)
             self._handle._update_position()
+            
+        # New multiple handles
+        if hasattr(self, '_handles') and self._handles:
+            for handle in self._handles:
+                handle.setVisible(visible)
+                handle._update_position()
 
     def update_locking(self):
         """Update flags and visuals based on model lock properties."""

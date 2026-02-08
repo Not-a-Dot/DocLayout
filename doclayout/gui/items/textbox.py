@@ -42,8 +42,18 @@ class TextBoxEditorItem(BaseEditorItem, QGraphicsTextItem):
         self.setTextWidth(model.width)
         
         from ..handles import ResizeHandle
-        self._handle = ResizeHandle(ResizeHandle.BOTTOM_RIGHT, self)
-        self._handle.setVisible(False)
+        self._handles = [
+            ResizeHandle(ResizeHandle.TOP_LEFT, self),
+            ResizeHandle(ResizeHandle.TOP_RIGHT, self),
+            ResizeHandle(ResizeHandle.BOTTOM_RIGHT, self),
+            ResizeHandle(ResizeHandle.BOTTOM_LEFT, self),
+            ResizeHandle(ResizeHandle.TOP, self),
+            ResizeHandle(ResizeHandle.BOTTOM, self),
+            ResizeHandle(ResizeHandle.LEFT, self),
+            ResizeHandle(ResizeHandle.RIGHT, self),
+        ]
+        for h in self._handles:
+            h.setVisible(False)
         
         # Monitor content changes to update model height
         self.document().contentsChange.connect(self.on_contents_change)
@@ -99,33 +109,26 @@ class TextBoxEditorItem(BaseEditorItem, QGraphicsTextItem):
         self.model.props["base_height"] = h
         self.update_handles()
 
-    def itemChange(self, change, value) -> any:
-        """Raise selected item to top."""
-        if change == QGraphicsItem.ItemSelectedChange:
-            self.setZValue(100 if value else 0)
-        return super().itemChange(change, value)
 
     def paint(self, painter, option, widget=None):
         """Custom paint to draw background and border."""
         # 1. Draw Background & Border matches ReportLabRenderer logic
         props = self.model.props
-        show_border = props.get("show_border", False)
-        bg_color = props.get("background_color", "")
+        show_outline = props.get("show_outline", False)
+        bg_color = props.get("fill_color", "")
         
         # Determine if we need to draw anything custom
-        if show_border or bg_color:
+        if show_outline or bg_color:
             painter.save()
             rect = self.boundingRect()
             
             # Setup Pen (Border)
-            if show_border:
+            if show_outline:
                 from PySide6.QtGui import QPen, QColor
-                border_color = props.get("border_color", "black")
-                border_width = float(props.get("border_width", 1.0))
-                # Adjust for pen width to draw inside/center? Qt draws centered on line.
-                # PDF usually draws text inside.
-                pen = QPen(QColor(border_color))
-                pen.setWidthF(border_width) # width in scene units (mm) if pen is cosmetic? No, scene units.
+                stroke_color = props.get("stroke_color", "black")
+                stroke_width = float(props.get("stroke_width", 1.0))
+                pen = QPen(QColor(stroke_color))
+                pen.setWidthF(stroke_width)
                 painter.setPen(pen)
             else:
                 painter.setPen(Qt.NoPen)
@@ -142,7 +145,6 @@ class TextBoxEditorItem(BaseEditorItem, QGraphicsTextItem):
             
             # Update Document Margin for Text
             # 1.0mm padding if styled
-            # Use idempotent check to avoid infinite recursion in paint -> update -> paint
             if abs(self.document().documentMargin() - 1.0) > 0.01:
                 self.document().setDocumentMargin(1.0)
         else:

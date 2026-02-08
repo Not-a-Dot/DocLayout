@@ -144,6 +144,7 @@ class EditorScene(QGraphicsScene):
         if not hasattr(item, 'model'):
             return
             
+        item.model.z = item.zValue()
         item.model.children = []
         for child in item.childItems():
             if hasattr(child, 'model'):
@@ -155,6 +156,7 @@ class EditorScene(QGraphicsScene):
         items = []
         for item in self.items():
             if hasattr(item, 'model') and item.parentItem() is None:
+                item.model.z = item.zValue()
                 self._sync_model_hierarchy(item)
                 items.append(item.model)
         
@@ -177,6 +179,36 @@ class EditorScene(QGraphicsScene):
         from .grouping import GroupingManager
         GroupingManager.group_items(self)
         self.hierarchyChanged.emit()
+
+    def bring_to_front(self) -> None:
+        """Bring selected items to the front by increasing Z-value."""
+        items = self.selectedItems()
+        if not items: return
+        
+        # Find max Z among all items
+        max_z = 0.0
+        for item in self.items():
+            if item.zValue() > max_z:
+                max_z = item.zValue()
+        
+        for item in items:
+            item.setZValue(max_z + 1.0)
+        self.update()
+
+    def send_to_back(self) -> None:
+        """Send selected items to the back by decreasing Z-value."""
+        items = self.selectedItems()
+        if not items: return
+        
+        # Find min Z among all items
+        min_z = 0.0
+        for item in self.items():
+            if item.zValue() < min_z:
+                min_z = item.zValue()
+        
+        for item in items:
+            item.setZValue(min_z - 1.0)
+        self.update()
 
     def set_tool(self, tool_name: str) -> None:
         self._current_tool = tool_name

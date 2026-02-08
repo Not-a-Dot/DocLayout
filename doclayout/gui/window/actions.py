@@ -89,7 +89,15 @@ class ActionManager:
         self.tool_table_action = QAction(tr('toolbar.table'), p)
         self.tool_table_action.setCheckable(True)
 
-        self.group_action = QAction(tr('menu.arrange.bring_front'), p)
+        self.bring_front_action = QAction(tr('menu.arrange.bring_front'), p)
+        self.bring_front_action.setShortcut("Ctrl+Shift+F")
+        self.bring_front_action.triggered.connect(lambda: p.scene.bring_to_front())
+        
+        self.send_back_action = QAction(tr('menu.arrange.send_back'), p)
+        self.send_back_action.setShortcut("Ctrl+Shift+B")
+        self.send_back_action.triggered.connect(lambda: p.scene.send_to_back())
+        
+        self.group_action = QAction(tr('menu.arrange.group'), p)
         self.group_action.setShortcut("Ctrl+G")
         self.group_action.triggered.connect(lambda: p.scene.group_selected())
         

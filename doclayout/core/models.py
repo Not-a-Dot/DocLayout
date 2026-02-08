@@ -57,6 +57,7 @@ class BaseElement(BaseModel):
     y: float = 0.0
     width: float = 0.0
     height: float = 0.0
+    z: float = 0.0
     props: Dict[str, Any] = Field(default_factory=dict)
     bindings: List[VariableBinding] = Field(default_factory=list)
     children: List['BaseElement'] = Field(default_factory=list)

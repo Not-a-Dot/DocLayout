@@ -93,15 +93,16 @@ class TemplateExporter:
             elem = queue.pop(0)
             
             # Determine which page this element starts on
-            # We use floor division to find page index (0, 1, 2...)
-            start_page_idx = int(elem.y // page_height)
+            # Clamp to 0 to handle elements positioned above page 1
+            start_page_idx = max(0, int(elem.y // page_height))
             
             # Ensure we have enough pages in the list
             while len(pages) <= start_page_idx:
                 pages.append([])
             
             # Local Y on its start page
-            local_y = elem.y % page_height
+            # Calculation that works for both positive and negative absolute Y
+            local_y = elem.y - (start_page_idx * page_height)
             
             # Check if element overflows the current page
             if local_y + elem.height > page_height:
@@ -310,7 +311,7 @@ class TemplateExporter:
                 italic = elem.props.get("font_italic", False)
                 
                 # Padding handling (1.0mm visual padding)
-                padding_mm = 1.0 if (elem.props.get("show_border", False) or elem.props.get("background_color")) else 0.0
+                padding_mm = 1.0 if (elem.props.get("show_outline", False) or elem.props.get("fill_color")) else 0.0
                 content_width = elem.width - (padding_mm * 2)
                 
                 if content_width > 0:
@@ -424,15 +425,14 @@ class TemplateExporter:
                                font_name=font_name, font_size=font_size, 
                                color=color, alignment=align, width=w,
                                bold=bold, italic=italic, wrap=True)
-        elif elem.type == ElementType.TEXT_BOX:
             # Render background/border first
-            bg_color = elem.props.get("background_color", None)
-            show_border = elem.props.get("show_border", False)
-            border_color = elem.props.get("border_color", "black") if show_border else None
-            border_width = float(elem.props.get("border_width", 1.0))
+            bg_color = elem.props.get("fill_color", None)
+            show_outline = elem.props.get("show_outline", False)
+            stroke_color = elem.props.get("stroke_color", "black") if show_outline else None
+            stroke_width = float(elem.props.get("stroke_width", 1.0))
             
-            if bg_color or show_border:
-                renderer.draw_rect(x, y, w, h, stroke_color=border_color, fill_color=bg_color, stroke_width=border_width)
+            if bg_color or show_outline:
+                renderer.draw_rect(x, y, w, h, stroke_color=stroke_color, fill_color=bg_color, stroke_width=stroke_width)
 
             # Render text
             font_name = elem.props.get("font_family", "Helvetica")
@@ -444,7 +444,7 @@ class TemplateExporter:
             
             # Apply padding (visual only for now, reducing text width/pos)
             # Use 1.0mm padding consistent with Editor
-            padding_pt = mm_to_pt(1.0) if (show_border or bg_color) else 0.0
+            padding_pt = mm_to_pt(1.0) if (show_outline or bg_color) else 0.0
             
             text_x = x + padding_pt
             text_w = w - (padding_pt * 2) if w else None

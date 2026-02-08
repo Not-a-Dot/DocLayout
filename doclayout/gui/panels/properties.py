@@ -152,25 +152,25 @@ class PropertyEditor(QWidget):
         
         # Border
         self.chk_border = QCheckBox("Show Border")
-        self.chk_border.toggled.connect(lambda v: self._update_model_prop("show_border", v))
+        self.chk_border.toggled.connect(lambda v: self._update_model_prop("show_outline", v))
         loss_layout.addRow("", self.chk_border)
         
         self.border_width = QDoubleSpinBox()
         self.border_width.setRange(0.1, 50.0)
         self.border_width.setSuffix(" pt")
         self.border_width.setValue(1.0)
-        self.border_width.valueChanged.connect(lambda v: self._update_model_prop("border_width", v))
+        self.border_width.valueChanged.connect(lambda v: self._update_model_prop("stroke_width", v))
         loss_layout.addRow("Border Width:", self.border_width)
         
-        # Colors (simplified as text inputs for now, could be color pickers)
+        # Colors
         self.border_color = QLineEdit()
         self.border_color.setPlaceholderText("#000000")
-        self.border_color.textChanged.connect(lambda v: self._update_model_prop("border_color", v))
+        self.border_color.textChanged.connect(lambda v: self._update_model_prop("stroke_color", v))
         loss_layout.addRow("Border Color:", self.border_color)
         
         self.bg_color = QLineEdit()
         self.bg_color.setPlaceholderText("transparent or #FFFFFF")
-        self.bg_color.textChanged.connect(lambda v: self._update_model_prop("background_color", v))
+        self.bg_color.textChanged.connect(lambda v: self._update_model_prop("fill_color", v))
         loss_layout.addRow("Background:", self.bg_color)
         
         self.appearance_section.setContentLayout(loss_layout)
@@ -408,10 +408,10 @@ class PropertyEditor(QWidget):
             self.h_edit.setValue(model.height)
             
             # Appearance
-            self.chk_border.setChecked(model.props.get("show_border", False))
-            self.border_width.setValue(float(model.props.get("border_width", 1.0)))
-            self.border_color.setText(str(model.props.get("border_color", "black")))
-            self.bg_color.setText(str(model.props.get("background_color", "")))
+            self.chk_border.setChecked(model.props.get("show_outline", False))
+            self.border_width.setValue(float(model.props.get("stroke_width", 1.0)))
+            self.border_color.setText(str(model.props.get("stroke_color", "black")))
+            self.bg_color.setText(str(model.props.get("fill_color", "")))
             
             # Locking
             self.chk_lock_pos.setChecked(all(it.model.lock_position for it in items))

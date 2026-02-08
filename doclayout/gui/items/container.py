@@ -14,37 +14,58 @@ class ContainerEditorItem(BaseEditorItem, QGraphicsRectItem):
         BaseEditorItem.__init__(self, model)
         
         self.setPos(model.x, model.y)
-        self._update_visuals()
+        self.update()
         
         from ..handles import ResizeHandle
-        self._handle = ResizeHandle(ResizeHandle.BOTTOM_RIGHT, self)
-        self._handle.setVisible(False)
+        self._handles = [
+            ResizeHandle(ResizeHandle.TOP_LEFT, self),
+            ResizeHandle(ResizeHandle.TOP_RIGHT, self),
+            ResizeHandle(ResizeHandle.BOTTOM_RIGHT, self),
+            ResizeHandle(ResizeHandle.BOTTOM_LEFT, self),
+            ResizeHandle(ResizeHandle.TOP, self),
+            ResizeHandle(ResizeHandle.BOTTOM, self),
+            ResizeHandle(ResizeHandle.LEFT, self),
+            ResizeHandle(ResizeHandle.RIGHT, self),
+        ]
+        for h in self._handles:
+            h.setVisible(False)
         
         # Track previous height for delta calculation
         self._last_height = model.height
 
-    def _update_visuals(self):
-        props = self.model.props
-        bg_type = props.get("bg_type", "transparent")
-        fill_color = props.get("fill_color", "#ffffff")
-        outline_color = props.get("stroke_color", "#000000")
-        alpha = props.get("opacity", 255)
-        
-        # Default pen for editor (dashed guide)
-        pen = QPen(QColor(100, 100, 100))
-        pen.setStyle(Qt.DashLine)
-        pen.setWidthF(0.5)
-        self.setPen(pen)
-        
-        # Brush
-        if bg_type == "solid":
-            color = QColor(fill_color)
-            color.setAlpha(alpha)
-            self.setBrush(QBrush(color))
-        else:
-            self.setBrush(Qt.NoBrush)
+    def paint(self, painter, option, widget):
+        # Set stroke width if enabled
+        show_outline = self.model.props.get("show_outline", False)
+        if show_outline:
+            from doclayout.core.geometry import PT_TO_MM
+            width_pt = float(self.model.props.get("stroke_width", 1.0))
+            width_mm = width_pt * PT_TO_MM
             
-        self.update()
+            pen = QPen()
+            stroke_color = self.model.props.get("stroke_color", "#000000")
+            pen.setColor(QColor(stroke_color))
+            pen.setWidthF(width_mm)
+            pen.setStyle(Qt.SolidLine)
+            pen.setCosmetic(False)
+            painter.setPen(pen)
+        else:
+            # Guide mode
+            pen = QPen(QColor(100, 100, 100))
+            pen.setStyle(Qt.DashLine)
+            pen.setWidthF(0.2)
+            painter.setPen(pen)
+
+        # Fill
+        bg_type = self.model.props.get("bg_type", "transparent")
+        if bg_type == "solid":
+            color = QColor(self.model.props.get("fill_color", "#ffffff"))
+            color.setAlpha(self.model.props.get("opacity", 255))
+            painter.setBrush(QBrush(color))
+        else:
+            painter.setBrush(Qt.NoBrush)
+
+        super().paint(painter, option, widget)
+        self.paint_lock_icons(painter)
 
     def setRect(self, x, y, w, h):
         """Called by ResizeHandle."""
@@ -101,38 +122,7 @@ class ContainerEditorItem(BaseEditorItem, QGraphicsRectItem):
                 # Update model
                 item.model.y += delta_h
 
-    def itemChange(self, change, value):
-        if change == QGraphicsItem.ItemSelectedChange:
-            if value:
-                self.setZValue(50) # Lower than handles but higher than background
-            else:
-                self.setZValue(10)
-        return super().itemChange(change, value)
 
-    def paint(self, painter, option, widget):
-        # Set stroke width if enabled
-        show_outline = self.model.props.get("show_outline", False)
-        if show_outline:
-            from doclayout.core.geometry import PT_TO_MM
-            width_pt = float(self.model.props.get("stroke_width", 1.0))
-            width_mm = width_pt * PT_TO_MM
-            
-            pen = self.pen()
-            stroke_color = self.model.props.get("stroke_color", "#000000")
-            pen.setColor(QColor(stroke_color))
-            pen.setWidthF(width_mm)
-            pen.setStyle(Qt.SolidLine)
-            pen.setCosmetic(False)
-            painter.setPen(pen)
-        else:
-            # Guide mode
-            pen = QPen(QColor(100, 100, 100))
-            pen.setStyle(Qt.DashLine)
-            pen.setWidthF(0.2)
-            painter.setPen(pen)
-
-        super().paint(painter, option, widget)
-        self.paint_lock_icons(painter)
 
     def create_properties_widget(self, parent):
         from PySide6.QtWidgets import QWidget, QFormLayout, QLineEdit, QCheckBox, QComboBox, QPushButton, QDoubleSpinBox, QSpinBox, QLabel
@@ -148,43 +138,6 @@ class ContainerEditorItem(BaseEditorItem, QGraphicsRectItem):
         lock_box.toggled.connect(lambda v: self.model.props.update({"lock_children": v}))
         layout.addRow("Selection:", lock_box)
         
-        # --- Visual Properties ---
-        layout.addRow(QLabel("<b>Visuals</b>"), QLabel(""))
-        
-        # Background Type
-        self._prop_bg_type = QComboBox()
-        self._prop_bg_type.addItems(["transparent", "solid"])
-        self._prop_bg_type.setCurrentText(self.model.props.get("bg_type", "transparent"))
-        self._prop_bg_type.currentTextChanged.connect(self._on_bg_type_changed)
-        layout.addRow("BG Type:", self._prop_bg_type)
-        
-        # Fill Color
-        self._btn_fill = QPushButton()
-        self._btn_fill.setFixedWidth(40)
-        self._update_btn_color(self._btn_fill, self.model.props.get("fill_color", "#ffffff"))
-        self._btn_fill.clicked.connect(lambda: self._on_color_clicked("fill_color", self._btn_fill))
-        layout.addRow("Fill Color:", self._btn_fill)
-        
-        # Outline Color
-        self._btn_outline = QPushButton()
-        self._btn_outline.setFixedWidth(40)
-        self._update_btn_color(self._btn_outline, self.model.props.get("stroke_color", "#000000"))
-        self._btn_outline.clicked.connect(lambda: self._on_color_clicked("stroke_color", self._btn_outline))
-        layout.addRow("Outline Color:", self._btn_outline)
-        
-        # Outline Toggle
-        self._prop_show_outline = QCheckBox("Show Border")
-        self._prop_show_outline.setChecked(self.model.props.get("show_outline", False))
-        self._prop_show_outline.toggled.connect(self._on_show_outline_toggled)
-        layout.addRow("", self._prop_show_outline)
-        
-        self._prop_stroke_w = QDoubleSpinBox()
-        self._prop_stroke_w.setRange(0.1, 20.0)
-        self._prop_stroke_w.setSingleStep(0.1)
-        self._prop_stroke_w.setValue(self.model.props.get("stroke_width", 1.0))
-        self._prop_stroke_w.valueChanged.connect(self._on_stroke_width_changed)
-        layout.addRow("Border Width:", self._prop_stroke_w)
-        
         return widget
 
     def _update_btn_color(self, btn, color_hex):
@@ -192,7 +145,7 @@ class ContainerEditorItem(BaseEditorItem, QGraphicsRectItem):
 
     def _on_bg_type_changed(self, text):
         self.model.props["bg_type"] = text
-        self._update_visuals()
+        self.update()
 
     def _on_show_outline_toggled(self, checked):
         self.model.props["show_outline"] = checked
@@ -211,7 +164,7 @@ class ContainerEditorItem(BaseEditorItem, QGraphicsRectItem):
             hex_color = color.name()
             self.model.props[prop_name] = hex_color
             self._update_btn_color(btn, hex_color)
-            self._update_visuals()
+            self.update()
 
     def get_bindable_properties(self):
         return ["fill_color", "stroke_color", "stroke_width", "show_outline"]

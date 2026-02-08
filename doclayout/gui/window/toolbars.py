@@ -39,6 +39,8 @@ class ToolbarManager:
         # toolbar.addAction(acts.tool_select_action)
         # ... (removed duplicates)
         
+        toolbar.addAction(acts.bring_front_action)
+        toolbar.addAction(acts.send_back_action)
         toolbar.addAction(acts.group_action)
 
     @staticmethod
