@@ -38,8 +38,8 @@ class StructurePanel(QWidget):
         self.tree_widget.model().rowsMoved.connect(self.on_rows_moved)
         
         self.scene.selectionChanged.connect(self.on_scene_selection_changed)
-        self.scene.hierarchyChanged.connect(self.refresh)
-        # itemAdded/Removed now handled by hierarchyChanged which is emitted in addItem/removeItem
+        self.scene.itemAdded.connect(self.on_item_added)
+        self.scene.itemRemoved.connect(self.on_item_removed)
         
         self.item_map = {} # graphics_item -> tree_item
 
