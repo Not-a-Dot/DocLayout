@@ -80,13 +80,22 @@ class EditorScene(QGraphicsScene):
             grid = self.alignment.grid_size
             if grid <= 0: grid = 10
             
-            left = int(rect.left()) - (int(rect.left()) % grid)
-            top = int(rect.top()) - (int(rect.top()) % grid)
+            # Use float coordinates to avoid rounding issues with zoom
+            left = rect.left() - (rect.left() % grid)
+            top = rect.top() - (rect.top() % grid)
             
-            for x in range(left, int(rect.right()), grid):
-                painter.drawLine(x, int(rect.top()), x, int(rect.bottom()))
-            for y in range(top, int(rect.bottom()), grid):
-                painter.drawLine(int(rect.left()), y, int(rect.right()), y)
+            # Draw vertical lines
+            x = left
+            while x <= rect.right():
+                painter.drawLine(x, rect.top(), x, rect.bottom())
+                x += grid
+            
+            # Draw horizontal lines
+            y = top
+            while y <= rect.bottom():
+                painter.drawLine(rect.left(), y, rect.right(), y)
+                y += grid
+            
             painter.restore()
 
     def drawForeground(self, painter: QPainter, rect: QRectF) -> None:

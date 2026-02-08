@@ -59,7 +59,7 @@ class AlignmentManager:
 
     def draw_guides(self, painter: QPainter) -> None:
         """
-        Draw active alignment guides.
+        Draw active alignment guides in red.
 
         Args:
             painter (QPainter): The painter to use.
@@ -68,8 +68,8 @@ class AlignmentManager:
             return
             
         painter.save()
-        pen = QPen(QColor(0, 120, 215, 150))
-        pen.setWidthF(0.2)
+        pen = QPen(QColor(255, 50, 50, 180))  # Red color for better visibility
+        pen.setWidthF(0.5)
         pen.setStyle(Qt.DashLine)
         painter.setPen(pen)
         painter.drawLines(self.guide_lines)
