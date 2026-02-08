@@ -41,10 +41,30 @@ class TextBoxEditorItem(BaseEditorItem, QGraphicsTextItem):
         # Set text width to enable wrapping
         self.setTextWidth(model.width)
         
-        from ...handles import ResizeHandle
+        from ..handles import ResizeHandle
         self._handle = ResizeHandle(ResizeHandle.BOTTOM_RIGHT, self)
         self._handle.setVisible(False)
         
+        # Monitor content changes to update model height
+        self.document().contentsChange.connect(self.on_contents_change)
+        
+    def on_contents_change(self, position, charsRemoved, charsAdded):
+        """Update model height when text changes."""
+        # We need to let the layout update first
+        # Use a zero-timer or just check boundingRect?
+        # Bounding rect might not be updated immediately in this signal.
+        # But let's try calling adjustSize equivalent or relying on scene update loop?
+        # QGraphicsTextItem updates layout lazily usually.
+        # Let's verify in paint? No, messy.
+        # Check logic:
+        # We can force an update of the geometry logic.
+        self.prepareGeometryChange()
+        h = self.boundingRect().height()
+        if hasattr(self, 'model'):
+             self.model.height = h
+             self.model.props["base_height"] = h
+             self.update_handles()
+             
     def update_visual_font(self) -> None:
         """Sync font styling from model."""
         from doclayout.core.geometry import PT_TO_MM

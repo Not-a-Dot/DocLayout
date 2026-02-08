@@ -28,11 +28,19 @@ class TextDrawer:
         
         canvas.setFont(font_name, fs)
         
-        lines = [text]
+        lines = []
         if not auto_scale and wrap and width and width > 0:
-            # Always wrap if text exceeds width
-            if stringWidth(text, font_name, fs) > width:
-                lines = simpleSplit(text, font_name, fs, width)
+            # Handle paragraphs by splitting by \n first
+            paragraphs = text.split('\n')
+            for p in paragraphs:
+                if not p:
+                    lines.append('')
+                    continue
+                # For each paragraph, apply simpleSplit for word wrapping
+                p_lines = simpleSplit(p, font_name, fs, width)
+                lines.extend(p_lines)
+        else:
+            lines = [text]
         
         line_h = fs * 1.2
         start_pdf_y = page_h - (y + (fs * 0.8))

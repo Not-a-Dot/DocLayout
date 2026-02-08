@@ -101,57 +101,28 @@ class TableEditorItem(BaseEditorItem, QGraphicsRectItem):
         painter.restore()
         self.paint_lock_icons(painter)
 
-    def setRect(self, x, y, w, h):
-        super().setRect(0, 0, w, h)
-        if hasattr(self, 'model'):
-            self.model.width = w
-            self.model.height = h
-        self.update_handles()
+        if "row_height" not in self.model.props:
+            # Default row height in mm (approx 20pt)
+            self.model.props["row_height"] = 7.0
 
-    def create_properties_widget(self, parent):
-        from PySide6.QtWidgets import QWidget, QFormLayout, QLineEdit, QPlainTextEdit, QPushButton, QCheckBox, QSpinBox, QLabel, QComboBox
-        widget = QWidget(parent)
-        layout = QFormLayout(widget)
-        
-        # Theme Selector
-        theme_combo = QComboBox()
-        theme_combo.addItems(["Simple", "Grid", "Striped", "Dark"])
-        theme_combo.setCurrentText(self.model.props.get("theme", "Grid"))
-        theme_combo.currentTextChanged.connect(lambda v: [self.model.props.update({"theme": v}), self.update()])
-        layout.addRow("Theme:", theme_combo)
-        
-        # Show Header
-        chk_header = QCheckBox("Show Header Row")
-        chk_header.setChecked(self.model.props.get("show_header", True))
-        chk_header.toggled.connect(lambda v: [self.model.props.update({"show_header": v}), self.update()])
-        layout.addRow("", chk_header)
-
-        # Font Size
-        spin_f = QSpinBox()
-        spin_f.setRange(4, 72)
-        spin_f.setValue(self.model.props.get("font_size", 10))
-        spin_f.valueChanged.connect(lambda v: [self.model.props.update({"font_size": v}), self.update()])
-        layout.addRow("Font Size:", spin_f)
-        
-        # Colors (Overrides)
-        header_bg = QLineEdit(self.model.props.get("header_bg_color", ""))
-        header_bg.setPlaceholderText("Header BG Color")
-        header_bg.textChanged.connect(lambda v: [self.model.props.update({"header_bg_color": v}), self.update()])
-        layout.addRow("Header BG:", header_bg)
-        
-        # Data Editor (Simple CSV-like)
-        layout.addRow(QLabel("<b>Table Data (Comma Separated):</b>"), QLabel(""))
-        data_edit = QPlainTextEdit()
-        data = self.model.props.get("data", [])
-        text = "\n".join([", ".join([str(c) for c in row]) for row in data])
-        data_edit.setPlainText(text)
-        
         def on_data_changed():
             lines = data_edit.toPlainText().strip().split("\n")
             if not lines or (len(lines) == 1 and not lines[0]):
+                data = []
                 self.model.props["data"] = []
             else:
-                self.model.props["data"] = [l.split(",") for l in lines]
+                data = [l.split(",") for l in lines]
+                self.model.props["data"] = data
+            
+            # Recalculate height based on new row count
+            rows = len(data) if data else 1
+            # Ensure minimum 1 row for visibility
+            if rows < 1: rows = 1
+            
+            row_h = self.model.props.get("row_height", 7.0)
+            new_h = rows * row_h
+            
+            self.setRect(self.rect().x(), self.rect().y(), self.rect().width(), new_h)
             self.update()
             
         data_edit.textChanged.connect(on_data_changed)
@@ -161,3 +132,18 @@ class TableEditorItem(BaseEditorItem, QGraphicsRectItem):
  
     def get_bindable_properties(self):
         return ["data", "font_size", "theme", "header_bg_color", "stroke_color"]
+
+    def setRect(self, x, y, w, h):
+        # When manually resizing, update row_height
+        data = self.model.props.get("data", [])
+        rows = len(data) if data else 1
+        if rows < 1: rows = 1
+        
+        # Calculate new row height based on new total height
+        self.model.props["row_height"] = h / rows
+        
+        super().setRect(0, 0, w, h)
+        if hasattr(self, 'model'):
+            self.model.width = w
+            self.model.height = h
+        self.update_handles()

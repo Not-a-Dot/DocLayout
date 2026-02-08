@@ -77,137 +77,77 @@ class TemplateExporter:
 
     def _paginate_elements(self, elements: List[BaseElement], page_height: float, top_margin: float) -> List[List[BaseElement]]:
         """
-        Split elements across multiple pages, dividing large elements when necessary.
-        
-        Args:
-            elements: List of elements to paginate
-            page_height: Height of each page in mm
-            top_margin: Top margin for split elements on new pages in mm
-            
-        Returns:
-            List of pages, each containing list of elements
+        Split elements across multiple pages based on their absolute Y coordinates.
+        Preserves multi-column layouts and absolute positioning.
         """
         import copy
         
-        pages = [[]]
-        current_page = 0
-        current_y = 0.0  # Current Y position on current page
+        # Sort elements by Y to process top-to-bottom
+        # This is important for split logic and queue processing
+        sorted_elements = sorted(elements, key=lambda e: e.y)
         
-        for elem in elements:
-            elem_copy = copy.deepcopy(elem)
+        pages: List[List[BaseElement]] = []
+        queue = [copy.deepcopy(e) for e in sorted_elements]
+        
+        while queue:
+            elem = queue.pop(0)
             
-            # For TEXT_BOX, calculate actual height before pagination check
-            if elem_copy.type == ElementType.TEXT_BOX:
-                # Calculate actual text height to determine if it fits
-                text = elem_copy.props.get("text", "")
-                if text:
-                    font_size = elem_copy.props.get("font_size", 12)
-                    line_height_mm = font_size * 1.2 / 2.83465
-                    width_pt = mm_to_pt(elem_copy.width)
-                    
-                    # Count lines using simpleSplit to match renderer exactly
-                    from reportlab.lib.utils import simpleSplit
-                    from doclayout.adapters.reportlab.font_helper import FontHelper
-                    
-                    font_family = elem_copy.props.get("font_family", "Helvetica")
-                    bold = elem_copy.props.get("font_bold", False)
-                    italic = elem_copy.props.get("font_italic", False)
-                    
-                    try:
-                        font_name = FontHelper.resolve(font_family, bold, italic)
-                    except:
-                        font_name = "Helvetica"
-                    
-                    # Use simpleSplit for consistency with TextDrawer
-                    # simpleSplit does NOT handle newlines, so we must split manually first
-                    paragraphs = text.split('\n')
-                    lines = []
-                    for p in paragraphs:
-                        if not p:
-                            lines.append('')  # Keep empty lines
-                            continue
-                        lines.extend(simpleSplit(p, font_name, font_size, width_pt))
-                    
-                    # Update height to actual text height
-                    elem_copy.height = len(lines) * line_height_mm
+            # Determine which page this element starts on
+            # We use floor division to find page index (0, 1, 2...)
+            start_page_idx = int(elem.y // page_height)
             
-            # Calculate available space on current page
-            available_height = page_height - current_y
+            # Ensure we have enough pages in the list
+            while len(pages) <= start_page_idx:
+                pages.append([])
             
-            # Check if element fits entirely on current page
-            if elem_copy.height <= available_height:
-                # Element fits, add it to current page
-                elem_copy.y = current_y
-                pages[current_page].append(elem_copy)
-                current_y += elem_copy.height
-            else:
-                # Element doesn't fit, need to split
-                if elem_copy.type == ElementType.TABLE:
-                    # Split table by rows
-                    remaining_elem = elem_copy
+            # Local Y on its start page
+            local_y = elem.y % page_height
+            
+            # Check if element overflows the current page
+            if local_y + elem.height > page_height:
+                if elem.type == ElementType.TABLE:
+                    # Split table
+                    available = page_height - local_y
+                    first, remaining = self._split_table(elem, available)
                     
-                    while remaining_elem is not None:
-                        # Calculate how much space is available
-                        available = page_height - current_y
-                        
-                        # Split the table
-                        first_part, remaining_part = self._split_table(remaining_elem, available)
-                        
-                        if first_part is not None:
-                            first_part.y = current_y
-                            pages[current_page].append(first_part)
-                        
-                        # Move to next page for remaining part
-                        if remaining_part is not None:
-                            current_page += 1
-                            pages.append([])
-                            current_y = top_margin  # Start with configured top margin
-                            remaining_elem = remaining_part
-                        else:
-                            remaining_elem = None
-                            # Update current_y to end of this part
-                            if first_part is not None:
-                                current_y += first_part.height
-                            else:
-                                current_y = page_height
-                            
-                elif elem_copy.type == ElementType.TEXT_BOX:
-                    # Split text box by content
-                    remaining_elem = elem_copy
+                    if first:
+                        first.y = local_y
+                        pages[start_page_idx].append(first)
                     
-                    while remaining_elem is not None:
-                        available = page_height - current_y
-                        
-                        # Split the text box
-                        first_part, remaining_part = self._split_textbox(remaining_elem, available)
-                        
-                        if first_part is not None:
-                            first_part.y = current_y
-                            pages[current_page].append(first_part)
-                        
-                        # Move to next page for remaining part
-                        if remaining_part is not None:
-                            current_page += 1
-                            pages.append([])
-                            current_y = top_margin  # Start with configured top margin
-                            remaining_elem = remaining_part
-                        else:
-                            remaining_elem = None
-                            # Update current_y to end of this part
-                            if first_part is not None:
-                                current_y += first_part.height
-                            else:
-                                current_y = page_height
+                    if remaining:
+                        # Move remaining part to start of next page
+                        # We project it in absolute space so start_page_idx logic works next loop
+                        remaining.y = (start_page_idx + 1) * page_height + top_margin
+                        queue.insert(0, remaining)
+                
+                elif elem.type == ElementType.TEXT_BOX:
+                    # Split textbox
+                    available = page_height - local_y
+                    first, remaining = self._split_textbox(elem, available)
+                    
+                    if first:
+                        first.y = local_y
+                        pages[start_page_idx].append(first)
+                    
+                    if remaining:
+                        remaining.y = (start_page_idx + 1) * page_height + top_margin
+                        queue.insert(0, remaining)
+                
                 else:
-                    # For other elements, move to next page
-                    current_page += 1
-                    pages.append([])
-                    current_y = 0.0
-                    elem_copy.y = current_y
-                    pages[current_page].append(elem_copy)
-                    current_y += elem_copy.height
+                    # For non-splittable elements, if most of it is on this page, keep it
+                    # otherwise push to next page
+                    if local_y > page_height * 0.9: # Very close to bottom
+                        elem.y = (start_page_idx + 1) * page_height + top_margin
+                        queue.insert(0, elem)
+                    else:
+                        elem.y = local_y
+                        pages[start_page_idx].append(elem)
+            else:
+                # Fits entirely on its starting page
+                elem.y = local_y
+                pages[start_page_idx].append(elem)
         
-        return pages
+        return pages if pages else [[]]
 
     def _split_table(self, elem: BaseElement, available_height: float):
         """
@@ -324,57 +264,83 @@ class TemplateExporter:
     def _adjust_dynamic_heights(self, elements: List[BaseElement]) -> List[BaseElement]:
         """
         Calculate dynamic heights for tables and text boxes, and adjust positions of elements below them.
+        Uses a strictly-below logic to allow columns to function correctly.
         """
-        # Sort elements by Y position to process top-to-bottom
+        # 1. Pre-calculate original geometries to determine "below" relationship
+        # We attach temporary attributes to elements to track state
+        for elem in elements:
+            elem._orig_y = elem.y
+            elem._orig_height = elem.height
+            elem._orig_bottom = elem.y + elem.height
+            elem._y_offset = 0.0
+
+        # 2. Identify growers and calculate their deltas
+        # We sort by Y to process usually top-to-bottom, but with the O(N^2) push it matters less
         sorted_elements = sorted(elements, key=lambda e: e.y)
         
-        cumulative_offset = 0.0
-        
         for elem in sorted_elements:
-            # Apply cumulative offset from elements above
-            elem.y += cumulative_offset
+            height_delta = 0.0
             
             if elem.type == ElementType.TABLE:
                 data = elem.props.get("data", [])
-                if not data:
-                    continue
-                
-                # Calculate base row height from editor dimensions
-                # Store original height as base_height if not already stored
-                if "base_height" not in elem.props:
-                    elem.props["base_height"] = elem.height
-                
-                base_height = elem.props["base_height"]
-                num_rows_data = len(data)
-                
-                # Calculate row height from editor (assuming editor had at least 1 row)
-                # Default to 3 rows if not specified
-                num_rows_editor = elem.props.get("num_rows_editor", 3)
-                row_height = base_height / num_rows_editor
-                
-                # Store row height for renderer
-                elem.props["row_height"] = row_height
-                
-                # Calculate new height based on actual data
-                new_height = row_height * num_rows_data
-                height_delta = new_height - elem.height
-                
-                # Update table height
-                elem.height = new_height
-                
-                # Add delta to cumulative offset for elements below
-                cumulative_offset += height_delta
-                
+                if data:
+                    if "base_height" not in elem.props:
+                        elem.props["base_height"] = elem.height
+                    
+                    base_height = elem.props["base_height"]
+                    num_rows_editor = elem.props.get("num_rows_editor", 3)
+                    # Avoid division by zero
+                    if num_rows_editor <= 0: num_rows_editor = 1
+                    
+                    row_height = base_height / num_rows_editor
+                    elem.props["row_height"] = row_height
+                    
+                    new_height = row_height * len(data)
+                    height_delta = new_height - elem.height
+                    elem.height = new_height
+                    
             elif elem.type == ElementType.TEXT_BOX:
-                # Store base height for pagination, but DON'T calculate full height here
-                # Pagination will handle splitting the text box across pages
                 if "base_height" not in elem.props:
                     elem.props["base_height"] = elem.height
+                    
+                text = elem.props.get("text", "")
+                font_family = elem.props.get("font_family", "Helvetica")
+                font_size = elem.props.get("font_size", 12)
+                bold = elem.props.get("font_bold", False)
+                italic = elem.props.get("font_italic", False)
                 
-                # Keep original height - pagination will split if needed
-                # No cumulative_offset change
+                # Padding handling (1.0mm visual padding)
+                padding_mm = 1.0 if (elem.props.get("show_border", False) or elem.props.get("background_color")) else 0.0
+                content_width = elem.width - (padding_mm * 2)
+                
+                if content_width > 0:
+                    text_height = self._calculate_text_height(text, font_family, font_size, content_width, bold, italic)
+                    new_height = text_height + (padding_mm * 2)
+                    
+                    height_delta = new_height - elem.height
+                    elem.height = new_height
+
+            # 3. If this element grew (or shrank), push ONLY elements strictly below it
+            if abs(height_delta) > 0.001:
+                grower_bottom = elem._orig_bottom
+                for victim in elements:
+                    if victim is elem: continue
+                    
+                    # Check if victim starts at or below the grower's original bottom
+                    # Use a small epsilon to handle alignment precision
+                    if victim._orig_y >= (grower_bottom - 0.1):
+                         victim._y_offset += height_delta
         
-        return sorted_elements
+        # 4. Apply accumulated offsets
+        for elem in elements:
+            elem.y += elem._y_offset
+            # Cleanup temporary attributes
+            del elem._orig_y
+            del elem._orig_height
+            del elem._orig_bottom
+            del elem._y_offset
+            
+        return elements
 
     def _calculate_text_height(self, text: str, font_family: str, font_size: float, 
                                width_mm: float, bold: bool = False, italic: bool = False) -> float:
