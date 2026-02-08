@@ -24,3 +24,4 @@ preview.pdf
 rules.md
 tests/
 prompt.txt
+.agent/
