@@ -27,11 +27,10 @@ class BaseEditorItem:
                 child_item.setParentItem(self)
 
     def mousePressEvent(self, event):
-        # If parent is locked, we don't allow selecting children directly?
-        # Actually, if we are here, we are the item being clicked.
-        # If OUR parent is locked, the parent should have intercepted this?
-        # No, child gets event first.
-        
+        # Save snapshot BEFORE move starts
+        if self.scene() and hasattr(self.scene(), "save_snapshot"):
+            self.scene().save_snapshot()
+            
         parent = self.parentItem()
         while parent:
             if hasattr(parent, 'model') and parent.model.lock_children:
@@ -44,11 +43,16 @@ class BaseEditorItem:
         super().mousePressEvent(event)
     
     def mouseReleaseEvent(self, event):
-        """Clear alignment guides when mouse is released."""
+        """Clear alignment guides when mouse is released and save snapshot."""
         super().mouseReleaseEvent(event)
-        if self.scene() and hasattr(self.scene(), 'alignment'):
-            self.scene().alignment.guide_lines = []
-            self.scene().update()
+        if self.scene():
+            if hasattr(self.scene(), 'alignment'):
+                self.scene().alignment.guide_lines = []
+                self.scene().update()
+            
+            # Save snapshot AFTER move ends
+            if hasattr(self.scene(), "save_snapshot"):
+                self.scene().save_snapshot()
 
     def itemChange(self, change, value):
         if change == QGraphicsItem.ItemSelectedChange:

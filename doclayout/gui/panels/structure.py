@@ -40,6 +40,7 @@ class StructurePanel(QWidget):
         self.scene.selectionChanged.connect(self.on_scene_selection_changed)
         self.scene.itemAdded.connect(self.on_item_added)
         self.scene.itemRemoved.connect(self.on_item_removed)
+        self.scene.sceneRestored.connect(self.refresh)
         
         self.item_map = {} # graphics_item -> tree_item
 

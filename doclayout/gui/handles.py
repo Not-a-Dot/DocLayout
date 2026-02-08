@@ -85,6 +85,11 @@ class ResizeHandle(QGraphicsRectItem):
         self._start_pos = event.scenePos()
         self._start_item_pos = self.parentItem().pos()
         self._start_rect = self.parentItem().boundingRect()
+        
+        # Save snapshot BEFORE resize starts
+        if self.scene() and hasattr(self.scene(), "save_snapshot"):
+            self.scene().save_snapshot()
+            
         event.accept()
 
     def mouseMoveEvent(self, event):
@@ -179,4 +184,7 @@ class ResizeHandle(QGraphicsRectItem):
         event.accept()
 
     def mouseReleaseEvent(self, event):
+        # Save snapshot AFTER resize ends
+        if self.scene() and hasattr(self.scene(), "save_snapshot"):
+            self.scene().save_snapshot()
         super().mouseReleaseEvent(event)

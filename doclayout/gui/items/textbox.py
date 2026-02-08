@@ -58,6 +58,22 @@ class TextBoxEditorItem(BaseEditorItem, QGraphicsTextItem):
         # Monitor content changes to update model height
         self.document().contentsChange.connect(self.on_contents_change)
         
+    def focusInEvent(self, event):
+        # Save snapshot BEFORE text editing starts
+        if self.scene() and hasattr(self.scene(), "save_snapshot"):
+            self.scene().save_snapshot()
+        super().focusInEvent(event)
+        
+    def focusOutEvent(self, event):
+        # Save snapshot AFTER text editing ends
+        # and sync final text to model
+        if hasattr(self, 'model'):
+            self.model.props["text"] = self.toPlainText()
+            
+        if self.scene() and hasattr(self.scene(), "save_snapshot"):
+            self.scene().save_snapshot()
+        super().focusOutEvent(event)
+        
     def on_contents_change(self, position, charsRemoved, charsAdded):
         """Update model height when text changes."""
         # We need to let the layout update first

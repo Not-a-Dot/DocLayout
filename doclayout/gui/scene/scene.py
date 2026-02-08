@@ -3,12 +3,13 @@ Core Editor Scene implementation.
 """
 
 import logging
+import json
 from typing import List, Optional
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsItem
 from PySide6.QtCore import Qt, Signal, QRectF
 from PySide6.QtGui import QPainter, QColor, QPen
 
-from doclayout.core.models import Template, PageSize, BaseElement, ElementType
+from doclayout.core.models import Template, PageSize, BaseElement, ElementType, CURRENT_VERSION
 from .alignment import AlignmentManager
 from .clipboard import SceneClipboard
 from .handlers import SceneEventHandler
@@ -25,12 +26,14 @@ class EditorScene(QGraphicsScene):
         itemMoved: Emitted when an item's geometry changes.
         itemRemoved: Emitted when an item is deleted.
         hierarchyChanged: Emitted when parenting or grouping changes.
+        sceneRestored: Emitted after a target undo/redo snapshot is restored.
     """
     toolChanged = Signal(str)
     itemAdded = Signal(QGraphicsItem)
     itemMoved = Signal(QGraphicsItem)
     itemRemoved = Signal(QGraphicsItem)
     hierarchyChanged = Signal()
+    sceneRestored = Signal()
 
     def __init__(self, parent=None) -> None:
         """Initialize the scene with defaults."""
@@ -38,6 +41,11 @@ class EditorScene(QGraphicsScene):
         self._current_tool: str = "select"
         self._page_width: float = 210.0 # A4 Default
         self._page_height: float = 297.0
+        
+        # Undo/Redo Stack (serialized json snapshots)
+        self._undo_stack = []
+        self._redo_stack = []
+        self._max_undo = 50
         
         # Template to store project settings
         self.template = Template(
@@ -51,6 +59,99 @@ class EditorScene(QGraphicsScene):
         
         self.itemMoved.connect(self.alignment.check_alignment)
         self._update_scene_rect()
+        
+        # Initial snapshot
+        self.save_snapshot()
+
+    def save_snapshot(self) -> None:
+        """Capture current state and push to undo stack."""
+        try:
+            snapshot = self.to_template().model_dump_json()
+            # Avoid duplicate snapshots
+            if self._undo_stack and self._undo_stack[-1] == snapshot:
+                return
+                
+            self._undo_stack.append(snapshot)
+            if len(self._undo_stack) > self._max_undo:
+                self._undo_stack.pop(0)
+            self._redo_stack.clear()
+            logger.debug(f"Snapshot saved. Stack size: {len(self._undo_stack)}")
+        except Exception as e:
+            logger.error(f"Failed to save snapshot: {e}")
+
+    def undo(self) -> None:
+        """Restore previous state."""
+        if len(self._undo_stack) <= 1:
+            return
+            
+        # Move current state to redo stack
+        current = self._undo_stack.pop()
+        self._redo_stack.append(current)
+        
+        # Restore pre-action state
+        last = self._undo_stack[-1]
+        self._restore_from_snapshot(last)
+
+    def redo(self) -> None:
+        """Restore next state."""
+        if not self._redo_stack:
+            return
+            
+        snapshot = self._redo_stack.pop()
+        self._undo_stack.append(snapshot)
+        self._restore_from_snapshot(snapshot)
+
+    def _restore_from_snapshot(self, json_data: str) -> None:
+        """Rebuild scene from a serialized Template."""
+        self.blockSignals(True)
+        try:
+            template_data = json.loads(json_data)
+            new_template = Template.model_validate(template_data)
+            
+            # Clear current items
+            # We use list() because items() changes as we remove
+            for item in list(self.items()):
+                if hasattr(item, 'model'):
+                    self.removeItem(item)
+            
+            # Update settings
+            self._page_width = new_template.page_size.width
+            self._page_height = new_template.page_size.height
+            self.template = new_template
+            self._update_scene_rect()
+            
+            # Recreate items
+            from doclayout.gui.items import get_item_for_model
+            
+            # Add items by Z-order to be safe
+            sorted_items = sorted(new_template.items, key=lambda x: getattr(x, 'z', 0))
+            
+            for element_model in sorted_items:
+                self._add_model_recursive(element_model)
+                
+        except Exception as e:
+            logger.error(f"Failed to restore snapshot: {e}")
+        finally:
+            self.blockSignals(False)
+            self.sceneRestored.emit()
+            self.update()
+
+    def _add_model_recursive(self, model, parent_item=None):
+        """Helper to rebuild hierarchy during restoration."""
+        from doclayout.gui.items import get_item_for_model
+        
+        # Note: children are already in model.children
+        item = get_item_for_model(model)
+        if parent_item:
+            item.setParentItem(parent_item)
+        else:
+            self.addItem(item)
+            
+        # Children in BaseElement.children
+        for child_model in model.children:
+            self._add_model_recursive(child_model, item)
+        
+        return item
 
     def _update_scene_rect(self) -> None:
         # Add margin for view
@@ -118,10 +219,15 @@ class EditorScene(QGraphicsScene):
 
     def delete_selected(self) -> None:
         """Delete all currently selected items."""
-        for item in self.selectedItems():
+        items = self.selectedItems()
+        if not items: return
+        
+        self.save_snapshot() # Save BEFORE delete
+        for item in items:
             self.removeItem(item)
             self.itemRemoved.emit(item)
         self.hierarchyChanged.emit()
+        self.save_snapshot() # Save AFTER delete
 
     def set_snap(self, enabled: bool) -> None:
         self.alignment.snap_enabled = enabled
@@ -177,13 +283,17 @@ class EditorScene(QGraphicsScene):
     def group_selected(self) -> None:
         """Group items into a new container."""
         from .grouping import GroupingManager
+        self.save_snapshot() # Save BEFORE group
         GroupingManager.group_items(self)
         self.hierarchyChanged.emit()
+        self.save_snapshot() # Save AFTER group
 
     def bring_to_front(self) -> None:
         """Bring selected items to the front by increasing Z-value."""
         items = self.selectedItems()
         if not items: return
+        
+        self.save_snapshot() # Save BEFORE Z-change
         
         # Find max Z among all items
         max_z = 0.0
@@ -194,11 +304,14 @@ class EditorScene(QGraphicsScene):
         for item in items:
             item.setZValue(max_z + 1.0)
         self.update()
+        self.save_snapshot() # Save AFTER Z-change
 
     def send_to_back(self) -> None:
         """Send selected items to the back by decreasing Z-value."""
         items = self.selectedItems()
         if not items: return
+        
+        self.save_snapshot() # Save BEFORE Z-change
         
         # Find min Z among all items
         min_z = 0.0
@@ -209,6 +322,7 @@ class EditorScene(QGraphicsScene):
         for item in items:
             item.setZValue(min_z - 1.0)
         self.update()
+        self.save_snapshot() # Save AFTER Z-change
 
     def set_tool(self, tool_name: str) -> None:
         self._current_tool = tool_name

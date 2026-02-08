@@ -78,6 +78,7 @@ class ToolManager:
                 scene.set_tool("select")
                 scene.clearSelection()
                 item.setSelected(True)
+                scene.save_snapshot() # Save AFTER creation
                 logger.info("Successfully created %s item", tool_name)
             else:
                 logger.error("Failed to create item for model: %s", model)

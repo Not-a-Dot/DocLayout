@@ -45,10 +45,16 @@ class SceneEventHandler:
             scene.delete_selected()
             event.accept()
         elif modifiers & Qt.ControlModifier:
-            if key == Qt.Key_C:
+            if key == Qt.Key_Z:
+                if modifiers & Qt.ShiftModifier:
+                    scene.redo()
+                else:
+                    scene.undo()
+            elif key == Qt.Key_C:
                 scene.copy_selected()
             elif key == Qt.Key_V:
                 scene.paste()
+                scene.save_snapshot() # Keep for paste as it adds many items
             elif key == Qt.Key_G:
                 scene.group_selected()
             event.accept()

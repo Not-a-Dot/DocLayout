@@ -90,6 +90,7 @@ class PropertyEditor(QWidget):
         super().__init__()
         self.scene = scene
         self.scene.selectionChanged.connect(self.on_selection_changed)
+        self.scene.sceneRestored.connect(self.on_selection_changed)
         if hasattr(self.scene, "itemMoved"):
             self.scene.itemMoved.connect(self.on_item_moved)
         self._selected_items = []
@@ -269,6 +270,10 @@ class PropertyEditor(QWidget):
         if not self._selected_items or self._updating:
             return
             
+        # Save snapshot BEFORE change
+        if self.scene and hasattr(self.scene, "save_snapshot"):
+            self.scene.save_snapshot()
+            
         for item in self._selected_items:
             item.model.props[key] = val
             if key == "lock_geometry":
@@ -276,6 +281,34 @@ class PropertyEditor(QWidget):
             elif key in ("lock_selection", "lock_position"):
                 item.update_locking()
             item.update()
+        
+        # Save snapshot AFTER change (optional but ensures current state is top)
+        if self.scene and hasattr(self.scene, "save_snapshot"):
+            self.scene.save_snapshot()
+
+    def _update_item_geo(self) -> None:
+        """Update geometry of selected item from spinboxes."""
+        if not self._item or self._updating:
+            return
+            
+        # Save snapshot BEFORE change
+        if self.scene and hasattr(self.scene, "save_snapshot"):
+            self.scene.save_snapshot()
+            
+        self._item.setPos(self.x_edit.value(), self.y_edit.value())
+        self._item.setRect(0, 0, self.w_edit.value(), self.h_edit.value())
+        self._item.model.x = self.x_edit.value()
+        self._item.model.y = self.y_edit.value()
+        self._item.model.width = self.w_edit.value()
+        self._item.model.height = self.h_edit.value()
+        
+        if hasattr(self._item, "update_handles"):
+            self._item.update_handles()
+        self._item.update()
+
+        # Save snapshot AFTER change
+        if self.scene and hasattr(self.scene, "save_snapshot"):
+            self.scene.save_snapshot()
 
     def _on_lock_geo_toggled(self, locked: bool) -> None:
         self._update_model_prop("lock_geometry", locked)
