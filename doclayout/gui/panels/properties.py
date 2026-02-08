@@ -224,6 +224,14 @@ class PropertyEditor(QWidget):
         self.props_section.addWidget(self.custom_props_area)
         self.container_layout.addWidget(self.props_section)
         
+        # 5. Project Properties Section (shown when nothing selected)
+        self.project_section = CollapsibleSection("Propriedades do Projeto")
+        from ..project_properties import ProjectPropertiesWidget
+        self.project_props_widget = ProjectPropertiesWidget(self.scene.template)
+        self.project_section.addWidget(self.project_props_widget)
+        self.container_layout.addWidget(self.project_section)
+        self.project_section.setVisible(False)  # Hidden by default
+        
         self.container_layout.addStretch()
 
     def _update_model_prop(self, key: str, val: any) -> None:
@@ -333,7 +341,13 @@ class PropertyEditor(QWidget):
             self._selected_items = []
             self._item = None
             self._clear_custom_widget()
-            self.setEnabled(False)
+            # Show project properties when nothing selected
+            self.geo_section.setVisible(False)
+            self.lock_section.setVisible(False)
+            self.binding_section.setVisible(False)
+            self.props_section.setVisible(False)
+            self.project_section.setVisible(True)
+            self.setEnabled(True)
             return
 
         self._updating = True
@@ -345,6 +359,11 @@ class PropertyEditor(QWidget):
             self._selected_items = items
             self._item = items[0]
             self.setEnabled(True)
+            
+            # Hide project properties, show element properties
+            self.project_section.setVisible(False)
+            self.geo_section.setVisible(True)
+            self.lock_section.setVisible(True)
             
             self._clear_custom_widget()
             

@@ -39,6 +39,13 @@ class EditorScene(QGraphicsScene):
         self._page_width: float = 210.0 # A4 Default
         self._page_height: float = 297.0
         
+        # Template to store project settings
+        self.template = Template(
+            name="New Template",
+            page_size=PageSize(width=self._page_width, height=self._page_height),
+            items=[]
+        )
+        
         self.alignment = AlignmentManager()
         self.clipboard = SceneClipboard()
         
@@ -151,11 +158,10 @@ class EditorScene(QGraphicsScene):
                 self._sync_model_hierarchy(item)
                 items.append(item.model)
         
-        return Template(
-            name="New Template",
-            page_size=PageSize(width=self._page_width, height=self._page_height),
-            items=items
-        )
+        # Preserve project settings
+        self.template.items = items
+        self.template.page_size = PageSize(width=self._page_width, height=self._page_height)
+        return self.template
 
     def copy_selected(self) -> None:
         self.clipboard.copy(self.selectedItems())

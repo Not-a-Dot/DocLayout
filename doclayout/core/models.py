@@ -23,6 +23,15 @@ class ElementType(str, Enum):
     CONTAINER = "container"
     TABLE = "table"
 
+class ProjectSettings(BaseModel):
+    """
+    Project-wide settings and configuration.
+    
+    Attributes:
+        page_top_margin_mm (float): Top margin for split elements on new pages.
+    """
+    page_top_margin_mm: float = 20.0  # Top margin for split elements
+
 class VariableBinding(BaseModel):
     """Mapping between a global variable and an element property."""
     variable_name: str
@@ -128,12 +137,14 @@ class Template(BaseModel):
         version (str): The format version this file was saved with.
         page_size (PageSize): Dimensions of the page.
         items (List[Union[BaseElement, BlockInstance]]): List of elements or block instances.
+        settings (ProjectSettings): Project-wide settings.
     """
     id: str = Field(default_factory=generate_id)
     name: str
     version: str = Field(default=CURRENT_VERSION)
     page_size: PageSize
     items: List[Union[BaseElement, BlockInstance]] = Field(default_factory=list)
+    settings: ProjectSettings = Field(default_factory=ProjectSettings)
 
 # Resolve forward references for recursive models
 BaseElement.model_rebuild()

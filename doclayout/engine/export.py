@@ -13,6 +13,7 @@ from reportlab.pdfbase.pdfmetrics import stringWidth
 THERMAL_PAPER_58MM = 58
 THERMAL_PAPER_80MM = 80
 THERMAL_PAPER_BOTTOM_MARGIN_MM = 10
+PAGE_TOP_MARGIN_MM = 20  # Top margin for split elements on new pages
 KV_BOX_PADDING_MM = 1.5
 KV_BOX_TEXT_PADDING_MM = 0.5
 
@@ -32,27 +33,247 @@ class TemplateExporter:
         # Calculate dynamic heights for tables and text boxes, adjust element positions
         elements = self._adjust_dynamic_heights(elements)
         
-        # Calculate dynamic height for thermal paper
+        # Calculate page height
         page_w = template.page_size.width
-        actual_height = template.page_size.height
+        page_h = template.page_size.height
         
-        if page_w in [THERMAL_PAPER_58MM, THERMAL_PAPER_80MM]:
+        # Check if this is thermal paper (dynamic height)
+        is_thermal = page_w in [THERMAL_PAPER_58MM, THERMAL_PAPER_80MM]
+        
+        if is_thermal:
+            # Thermal paper: calculate total height needed
             max_y = 0
             for elem in elements:
                 max_y = max(max_y, elem.y + elem.height)
             actual_height = max_y + THERMAL_PAPER_BOTTOM_MARGIN_MM
-        
-        # Setup renderer
-        renderer.set_page_size(mm_to_pt(page_w), mm_to_pt(actual_height))
-        renderer.initialize(output_path)
-        renderer.start_page()
-        
-        for elem in elements:
-            self._render_element(elem, renderer)
             
-        renderer.end_page()
+            # Setup renderer for single page
+            renderer.set_page_size(mm_to_pt(page_w), mm_to_pt(actual_height))
+            renderer.initialize(output_path)
+            renderer.start_page()
+            
+            for elem in elements:
+                self._render_element(elem, renderer)
+                
+            renderer.end_page()
+        else:
+            # Fixed page size (A4, etc): use pagination with configured top margin
+            top_margin = template.settings.page_top_margin_mm
+            pages = self._paginate_elements(elements, page_h, top_margin)
+            
+            # Setup renderer
+            renderer.set_page_size(mm_to_pt(page_w), mm_to_pt(page_h))
+            renderer.initialize(output_path)
+            
+            # Render each page
+            for page_elements in pages:
+                renderer.start_page()
+                for elem in page_elements:
+                    self._render_element(elem, renderer)
+                renderer.end_page()
+        
         renderer.save(output_path)
         return output_path
+
+    def _paginate_elements(self, elements: List[BaseElement], page_height: float, top_margin: float) -> List[List[BaseElement]]:
+        """
+        Split elements across multiple pages, dividing large elements when necessary.
+        
+        Args:
+            elements: List of elements to paginate
+            page_height: Height of each page in mm
+            top_margin: Top margin for split elements on new pages in mm
+            
+        Returns:
+            List of pages, each containing list of elements
+        """
+        import copy
+        
+        pages = [[]]
+        current_page = 0
+        current_y = 0.0  # Current Y position on current page
+        
+        for elem in elements:
+            elem_copy = copy.deepcopy(elem)
+            
+            # Calculate available space on current page
+            available_height = page_height - current_y
+            
+            # Check if element fits entirely on current page
+            if elem_copy.height <= available_height:
+                # Element fits, add it to current page
+                elem_copy.y = current_y
+                pages[current_page].append(elem_copy)
+                current_y += elem_copy.height
+            else:
+                # Element doesn't fit, need to split
+                if elem_copy.type == ElementType.TABLE:
+                    # Split table by rows
+                    remaining_elem = elem_copy
+                    
+                    while remaining_elem is not None:
+                        # Calculate how much space is available
+                        available = page_height - current_y
+                        
+                        # Split the table
+                        first_part, remaining_part = self._split_table(remaining_elem, available)
+                        
+                        if first_part is not None:
+                            first_part.y = current_y
+                            pages[current_page].append(first_part)
+                        
+                        # Move to next page for remaining part
+                        if remaining_part is not None:
+                            current_page += 1
+                            pages.append([])
+                            current_y = top_margin  # Start with configured top margin
+                            remaining_elem = remaining_part
+                        else:
+                            remaining_elem = None
+                            current_y = page_height  # Page is full
+                            
+                elif elem_copy.type == ElementType.TEXT_BOX:
+                    # Split text box by content
+                    remaining_elem = elem_copy
+                    
+                    while remaining_elem is not None:
+                        available = page_height - current_y
+                        
+                        # Split the text box
+                        first_part, remaining_part = self._split_textbox(remaining_elem, available)
+                        
+                        if first_part is not None:
+                            first_part.y = current_y
+                            pages[current_page].append(first_part)
+                        
+                        # Move to next page for remaining part
+                        if remaining_part is not None:
+                            current_page += 1
+                            pages.append([])
+                            current_y = top_margin  # Start with configured top margin
+                            remaining_elem = remaining_part
+                        else:
+                            remaining_elem = None
+                            current_y = page_height
+                else:
+                    # For other elements, move to next page
+                    current_page += 1
+                    pages.append([])
+                    current_y = 0.0
+                    elem_copy.y = current_y
+                    pages[current_page].append(elem_copy)
+                    current_y += elem_copy.height
+        
+        return pages
+
+    def _split_table(self, elem: BaseElement, available_height: float):
+        """
+        Split a table element into two parts based on available height.
+        
+        Returns:
+            (first_part, remaining_part) - Either can be None
+        """
+        import copy
+        
+        row_height = elem.props.get("row_height", 20.0)
+        data = elem.props.get("data", [])
+        
+        if not data or available_height < row_height:
+            # Not enough space for even one row, move entire table to next page
+            return None, elem
+        
+        # Calculate how many rows fit
+        rows_that_fit = int(available_height / row_height)
+        
+        if rows_that_fit >= len(data):
+            # All rows fit
+            return elem, None
+        
+        # Split the data
+        first_part_data = data[:rows_that_fit]
+        remaining_data = data[rows_that_fit:]
+        
+        # Create first part
+        first_elem = copy.deepcopy(elem)
+        first_elem.props["data"] = first_part_data
+        first_elem.height = rows_that_fit * row_height
+        
+        # Create remaining part
+        remaining_elem = copy.deepcopy(elem)
+        remaining_elem.props["data"] = remaining_data
+        remaining_elem.height = len(remaining_data) * row_height
+        
+        return first_elem, remaining_elem
+
+    def _split_textbox(self, elem: BaseElement, available_height: float):
+        """
+        Split a text box element into two parts based on available height.
+        
+        Uses ReportLab's stringWidth for accurate text measurement.
+        
+        Returns:
+            (first_part, remaining_part) - Either can be None
+        """
+        import copy
+        from reportlab.pdfbase.pdfmetrics import stringWidth
+        
+        font_size = elem.props.get("font_size", 12)
+        font_name = elem.props.get("font_family", "Helvetica")
+        line_height_mm = font_size * 1.2 / 2.83465  # Convert pt to mm
+        
+        text = elem.props.get("text", "")
+        if not text or available_height < line_height_mm:
+            # Not enough space for even one line, move to next page
+            return None, elem
+        
+        # Calculate how many lines fit
+        lines_that_fit = int(available_height / line_height_mm)
+        
+        # Convert width to points for stringWidth
+        width_pt = mm_to_pt(elem.width)
+        
+        # Split text into lines that fit within width
+        words = text.split()
+        lines = []
+        current_line = []
+        
+        for word in words:
+            # Test if adding this word exceeds width
+            test_line = " ".join(current_line + [word])
+            text_width = stringWidth(test_line, font_name, font_size)
+            
+            if text_width <= width_pt:
+                current_line.append(word)
+            else:
+                # Current line is full, start new line
+                if current_line:
+                    lines.append(" ".join(current_line))
+                current_line = [word]
+        
+        # Add remaining words as last line
+        if current_line:
+            lines.append(" ".join(current_line))
+        
+        # Check if all lines fit
+        if len(lines) <= lines_that_fit:
+            # All text fits on current page
+            return elem, None
+        
+        # Split at lines_that_fit
+        first_part_lines = lines[:lines_that_fit]
+        remaining_lines = lines[lines_that_fit:]
+        
+        # Create first part
+        first_elem = copy.deepcopy(elem)
+        first_elem.props["text"] = " ".join(first_part_lines)
+        first_elem.height = lines_that_fit * line_height_mm
+        
+        # Create remaining part
+        remaining_elem = copy.deepcopy(elem)
+        remaining_elem.props["text"] = " ".join(remaining_lines)
+        remaining_elem.height = len(remaining_lines) * line_height_mm
+        
+        return first_elem, remaining_elem
 
     def _adjust_dynamic_heights(self, elements: List[BaseElement]) -> List[BaseElement]:
         """
