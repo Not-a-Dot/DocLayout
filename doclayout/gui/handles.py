@@ -4,13 +4,13 @@ Resize Handle Graphics Item.
 
 from PySide6.QtWidgets import QGraphicsRectItem, QGraphicsItem
 from PySide6.QtCore import Qt, QRectF
-from PySide6.QtGui import QBrush, QPen, QColor, QCursor
+from PySide6.QtGui import QBrush, QPen, QColor, QCursor, QPainter
 
 class ResizeHandle(QGraphicsRectItem):
     """
     A handle for resizing items.
     """
-    SIZE = 6.0 # Handle size in scene units (mm)
+    SIZE = 2.0 # Smaller size for better aesthetics (mm)
     
     # Position constants
     TOP_LEFT = 0
@@ -25,14 +25,24 @@ class ResizeHandle(QGraphicsRectItem):
     def __init__(self, position: int, parent: QGraphicsItem):
         super().__init__(0, 0, self.SIZE, self.SIZE, parent)
         self._position = position
-        self.setBrush(QBrush(Qt.blue))
-        self.setPen(QPen(Qt.white))
+        
+        # Professional look: White fill, Blue border
+        self.setBrush(QBrush(Qt.white))
+        self.setPen(QPen(QColor("#1a73e8"), 0.3)) # Google Blue
+        
         self.setFlags(QGraphicsItem.ItemIsMovable) 
         self.setFlag(QGraphicsItem.ItemIsMovable, False)
         self.setFlag(QGraphicsItem.ItemIsSelectable, False)
         
         self.setCursor(self._get_cursor())
         self._update_position()
+
+    def paint(self, painter, option, widget):
+        """Draw as a professional square (fallback to default but with antialiasing)."""
+        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setBrush(self.brush())
+        painter.setPen(self.pen())
+        painter.drawRect(self.rect())
 
     def _get_cursor(self):
         if self._position in (self.TOP_LEFT, self.BOTTOM_RIGHT):
@@ -61,6 +71,14 @@ class ResizeHandle(QGraphicsRectItem):
             self.setPos(rect.right() - s/2, rect.bottom() - s/2)
         elif self._position == self.BOTTOM_LEFT:
             self.setPos(rect.left() - s/2, rect.bottom() - s/2)
+        elif self._position == self.TOP:
+            self.setPos(rect.center().x() - s/2, rect.top() - s/2)
+        elif self._position == self.BOTTOM:
+            self.setPos(rect.center().x() - s/2, rect.bottom() - s/2)
+        elif self._position == self.LEFT:
+            self.setPos(rect.left() - s/2, rect.center().y() - s/2)
+        elif self._position == self.RIGHT:
+            self.setPos(rect.right() - s/2, rect.center().y() - s/2)
             
     def mousePressEvent(self, event):
         # Start resize
@@ -93,10 +111,6 @@ class ResizeHandle(QGraphicsRectItem):
         # Snap logic here? Yes, if we want resize snap.
         # Access scene grid size?
         scene = self.scene()
-        if scene and scene.alignment.snap_enabled:
-             pos.setX(round(pos.x() / scene.alignment.grid_size) * scene.alignment.grid_size)
-             pos.setY(round(pos.y() / scene.alignment.grid_size) * scene.alignment.grid_size)
-        
         pos = event.scenePos()
         scene = self.scene()
         if scene and scene.alignment.snap_enabled:

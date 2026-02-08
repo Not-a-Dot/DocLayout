@@ -141,11 +141,19 @@ class TemplateExporter:
                         elem.y = (start_page_idx + 1) * page_height + top_margin
                         queue.insert(0, elem)
                     else:
+                        dy = local_y - elem.y
                         elem.y = local_y
+                        if elem.type == ElementType.LINE:
+                            elem.props["y2"] = elem.props.get("y2", elem.y) + dy
+                            elem.props["x2"] = elem.props.get("x2", elem.x) # x remains the same for simple move
                         pages[start_page_idx].append(elem)
             else:
                 # Fits entirely on its starting page
+                dy = local_y - elem.y
                 elem.y = local_y
+                if elem.type == ElementType.LINE:
+                    elem.props["y2"] = elem.props.get("y2", elem.y) + dy
+                    elem.props["x2"] = elem.props.get("x2", elem.x) # x remains the same for simple move
                 pages[start_page_idx].append(elem)
         
         return pages if pages else [[]]
@@ -425,7 +433,8 @@ class TemplateExporter:
                                font_name=font_name, font_size=font_size, 
                                color=color, alignment=align, width=w,
                                bold=bold, italic=italic, wrap=True)
-            # Render background/border first
+        elif elem.type == ElementType.TEXT_BOX:
+            # Render background/border
             bg_color = elem.props.get("fill_color", None)
             show_outline = elem.props.get("show_outline", False)
             stroke_color = elem.props.get("stroke_color", "black") if show_outline else None
@@ -434,7 +443,7 @@ class TemplateExporter:
             if bg_color or show_outline:
                 renderer.draw_rect(x, y, w, h, stroke_color=stroke_color, fill_color=bg_color, stroke_width=stroke_width)
 
-            # Render text
+            # Render text with padding
             font_name = elem.props.get("font_family", "Helvetica")
             font_size = elem.props.get("font_size", 12)
             color = elem.props.get("color", "black")
@@ -442,14 +451,13 @@ class TemplateExporter:
             bold = elem.props.get("font_bold", False)
             italic = elem.props.get("font_italic", False)
             
-            # Apply padding (visual only for now, reducing text width/pos)
             # Use 1.0mm padding consistent with Editor
-            padding_pt = mm_to_pt(1.0) if (show_outline or bg_color) else 0.0
-            
+            padding_pt = mm_to_pt(1.0)
             text_x = x + padding_pt
-            text_w = w - (padding_pt * 2) if w else None
+            text_y = y + padding_pt
+            text_w = w - (padding_pt * 2) if w > (padding_pt * 2) else w
             
-            renderer.draw_text(text_x, y + padding_pt, elem.props.get("text", ""), 
+            renderer.draw_text(text_x, text_y, elem.props.get("text", ""), 
                                font_name=font_name, font_size=font_size, 
                                color=color, alignment=align, width=text_w,
                                bold=bold, italic=italic, wrap=True)
