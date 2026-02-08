@@ -1,7 +1,10 @@
 
 import json
 import os
+import logging
 from typing import Dict, List
+
+logger = logging.getLogger(__name__)
 
 class VariableManager:
     _instance = None
@@ -29,7 +32,7 @@ class VariableManager:
                 with open(path, 'r') as f:
                     self.variables = json.load(f)
             except Exception as e:
-                print(f"Error loading variables: {e}")
+                logger.error("Error loading variables: %s", e, exc_info=True)
                 self.variables = {}
         else:
             self.variables = {}
@@ -40,7 +43,7 @@ class VariableManager:
             with open(path, 'w') as f:
                 json.dump(self.variables, f, indent=2)
         except Exception as e:
-            print(f"Error saving variables: {e}")
+            logger.error("Error saving variables: %s", e, exc_info=True)
 
     def add_variable(self, name: str, default_value: str = ""):
         self.variables[name] = default_value

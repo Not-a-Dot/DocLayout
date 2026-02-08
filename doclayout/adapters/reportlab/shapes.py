@@ -14,7 +14,8 @@ class ShapeDrawer:
         if not color_str: return None
         try:
             return HexColor(color_str)
-        except:
+        except (ValueError, AttributeError):
+            # Fallback to named color if hex parsing fails
             return toColor(color_str)
 
     @staticmethod

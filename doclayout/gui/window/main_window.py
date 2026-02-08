@@ -126,6 +126,7 @@ class MainWindow(QMainWindow):
             template = self.scene.to_template()
             from doclayout.adapters.reportlab import ReportLabRenderer
             from doclayout.engine.export import TemplateExporter
+            import subprocess
             
             exporter = TemplateExporter()
             renderer = ReportLabRenderer()
@@ -134,10 +135,15 @@ class MainWindow(QMainWindow):
             exporter.export(template, renderer, output_path)
             self.status_bar.showMessage(f"Preview generated: {output_path}")
             
+            # Open PDF with default viewer (safe from shell injection)
             if sys.platform == "linux":
-                os.system(f"xdg-open {output_path}")
+                subprocess.run(["xdg-open", output_path], check=False)
+            elif sys.platform == "darwin":
+                subprocess.run(["open", output_path], check=False)
+            elif sys.platform == "win32":
+                subprocess.run(["start", output_path], shell=True, check=False)
         except Exception as e:
-            logger.error("Preview error: %s", e)
+            logger.error("Preview error: %s", e, exc_info=True)
             QMessageBox.critical(self, "Error", str(e))
 
     def new_file(self) -> None:

@@ -3,9 +3,12 @@ Theme Manager.
 Handles switching between Light and Dark themes.
 """
 
+import logging
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QPalette, QColor
 from PySide6.QtCore import Qt
+
+logger = logging.getLogger(__name__)
 
 class ThemeManager:
     LIGHT = "Light"
@@ -64,7 +67,7 @@ class ThemeManager:
                 app.setStyleSheet(data["stylesheet"])
                 
         except Exception as e:
-            print(f"Error applying theme {theme_name}: {e}")
+            logger.error("Error applying theme %s: %s", theme_name, e, exc_info=True)
 
     @staticmethod
     def _apply_dark_fusion(app: QApplication):

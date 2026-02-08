@@ -11,8 +11,28 @@ from doclayout.engine.export import TemplateExporter
 from doclayout.adapters.reportlab_adapter import ReportLabRenderer
 from doclayout.core.geometry import mm_to_pt
 
-def generate_pdf(template_path: str, data: Dict[str, Any], output_path: str):
-    """Convenience function to generate a PDF from a template and data."""
+def generate_pdf(template_path: str, data: Dict[str, Any], output_path: str) -> None:
+    """
+    Generate a PDF from a template file with data binding.
+    
+    Convenience function for one-shot PDF generation. For batch operations,
+    use DocGenerator class to avoid reloading the template.
+    
+    Args:
+        template_path (str): Path to the JSON template file created by the editor.
+        data (Dict[str, Any]): Dictionary mapping variable names to their values.
+            Keys should match variable names defined in the template.
+        output_path (str): File path where the generated PDF will be saved.
+    
+    Raises:
+        FileNotFoundError: If template file doesn't exist.
+        ValidationError: If template JSON structure is invalid.
+        IOError: If output path is not writable.
+    
+    Example:
+        >>> data = {"client_name": "John Doe", "invoice_id": "INV-001"}
+        >>> generate_pdf("invoice.json", data, "output.pdf")
+    """
     gen = DocGenerator(template_path)
     gen.generate(data, output_path)
 

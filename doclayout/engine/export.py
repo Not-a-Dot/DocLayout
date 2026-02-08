@@ -6,7 +6,15 @@ from doclayout.core.models import Template, ElementType, BaseElement
 from doclayout.core.geometry import mm_to_pt
 from doclayout.engine.layout import LayoutEngine
 from doclayout.engine.renderer_api import Renderer
+from doclayout.adapters.reportlab.font_helper import FontHelper
 from reportlab.pdfbase.pdfmetrics import stringWidth
+
+# Constants for thermal paper and layout
+THERMAL_PAPER_58MM = 58
+THERMAL_PAPER_80MM = 80
+THERMAL_PAPER_BOTTOM_MARGIN_MM = 10
+KV_BOX_PADDING_MM = 1.5
+KV_BOX_TEXT_PADDING_MM = 0.5
 
 class TemplateExporter:
     """
@@ -25,11 +33,11 @@ class TemplateExporter:
         page_w = template.page_size.width
         actual_height = template.page_size.height
         
-        if page_w in [58, 80]:
+        if page_w in [THERMAL_PAPER_58MM, THERMAL_PAPER_80MM]:
             max_y = 0
             for elem in elements:
                 max_y = max(max_y, elem.y + elem.height)
-            actual_height = max_y + 10 # 10mm margin
+            actual_height = max_y + THERMAL_PAPER_BOTTOM_MARGIN_MM
         
         # Setup renderer
         renderer.set_page_size(mm_to_pt(page_w), mm_to_pt(actual_height))
@@ -43,34 +51,7 @@ class TemplateExporter:
         renderer.save(output_path)
         return output_path
 
-    def _resolve_rl_font(self, font_name: str, bold: bool, italic: bool) -> str:
-        # Standard mapping
-        mapping = {
-            "Arial": "Helvetica",
-            "Helvetica": "Helvetica",
-            "Times New Roman": "Times-Roman",
-            "Times": "Times-Roman",
-            "Courier New": "Courier",
-            "Courier": "Courier"
-        }
-        base = mapping.get(font_name, "Helvetica")
-        
-        if base == "Helvetica":
-            if bold and italic: return "Helvetica-BoldOblique"
-            if bold: return "Helvetica-Bold"
-            if italic: return "Helvetica-Oblique"
-            return "Helvetica"
-        elif base == "Times-Roman":
-            if bold and italic: return "Times-BoldItalic"
-            if bold: return "Times-Bold"
-            if italic: return "Times-Italic"
-            return "Times-Roman"
-        elif base == "Courier":
-            if bold and italic: return "Courier-BoldOblique"
-            if bold: return "Courier-Bold"
-            if italic: return "Courier-Oblique"
-            return "Courier"
-        return base
+
 
     def _render_element(self, elem: BaseElement, renderer: Renderer):
         x = mm_to_pt(elem.x)
@@ -112,15 +93,16 @@ class TemplateExporter:
                 split = mm_to_pt(props.get("split_fixed", 20.0))
             elif stype == "auto":
                 # Auto logic: measure key text
-                rl_font = self._resolve_rl_font(font_family, bold, italic)
+                rl_font = FontHelper.resolve(font_family, bold, italic)
                 key_txt = props.get("key_text", "Label:")
                 try:
                     txt_w = stringWidth(key_txt, rl_font, font_size)
-                except:
+                except (KeyError, ValueError, AttributeError):
+                    # Fallback to Helvetica if font not found or invalid
                     txt_w = stringWidth(key_txt, "Helvetica", font_size)
                 
-                # Add 1.5mm padding (Editor uses 1.0mm, but PDF might need a tad more to be safe)
-                split = txt_w + mm_to_pt(1.5)
+                # Add padding for better visual spacing
+                split = txt_w + mm_to_pt(KV_BOX_PADDING_MM)
             else: # ratio
                 ratio = props.get("split_ratio", 0.4)
                 split = w * ratio
@@ -140,14 +122,14 @@ class TemplateExporter:
             v_offset = (h - font_size) / 2
             
             # Key Label
-            renderer.draw_text(x + mm_to_pt(0.5), y + v_offset, props.get("key_text", "Label:"), 
+            renderer.draw_text(x + mm_to_pt(KV_BOX_TEXT_PADDING_MM), y + v_offset, props.get("key_text", "Label:"), 
                                font_name=font_family, font_size=font_size, color=color,
-                               width=split - mm_to_pt(0.5), bold=bold, italic=italic, wrap=True, auto_scale=True)
+                               width=split - mm_to_pt(KV_BOX_TEXT_PADDING_MM), bold=bold, italic=italic, wrap=True, auto_scale=True)
             
             # Value Label
-            renderer.draw_text(x + split + mm_to_pt(0.5), y + v_offset, props.get("text", "[Value]"), 
+            renderer.draw_text(x + split + mm_to_pt(KV_BOX_TEXT_PADDING_MM), y + v_offset, props.get("text", "[Value]"), 
                                font_name=font_family, font_size=font_size, color=color,
-                               width=w - split - mm_to_pt(0.5), bold=bold, italic=italic, wrap=True, auto_scale=True)
+                               width=w - split - mm_to_pt(KV_BOX_TEXT_PADDING_MM), bold=bold, italic=italic, wrap=True, auto_scale=True)
                                
         elif elem.type == ElementType.CONTAINER:
             # Draw container background and border like a rectangle

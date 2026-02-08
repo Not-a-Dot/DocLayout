@@ -72,7 +72,8 @@ class TableEditorItem(BaseEditorItem, QGraphicsRectItem):
                     painter.setPen(pen)
                     try:
                         text = str(data[r][c])
-                    except:
+                    except (IndexError, KeyError, TypeError):
+                        # Handle missing or invalid cell data
                         text = ""
                         
                     # Alignment and padding
